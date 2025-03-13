@@ -3,8 +3,13 @@ import pandas as pd
 import numpy as np
 import json
 import base64
-import io
 import datetime
+import io
+
+# Set page configuration
+st.set_page_config(page_title="Sales Metrics Simulator", layout="wide", initial_sidebar_state="expanded")
+
+# Try to import optional dependencies with fallbacks
 try:
     from reportlab.lib.pagesizes import letter, A4
     from reportlab.lib import colors
@@ -14,9 +19,6 @@ try:
     REPORTLAB_AVAILABLE = True
 except ImportError:
     REPORTLAB_AVAILABLE = False
-
-# Set page configuration
-st.set_page_config(page_title="Sales Metrics Simulator", layout="wide", initial_sidebar_state="expanded")
 
 # Initialize session state for simulations
 if 'simulations' not in st.session_state:
@@ -29,6 +31,21 @@ def get_csv_download_link(df, filename, text):
     csv = df.to_csv(index=False)
     b64 = base64.b64encode(csv.encode()).decode()
     href = f'<a href="data:file/csv;base64,{b64}" download="{filename}">{text}</a>'
+    return href
+
+def get_json_download_link(data, filename, text):
+    """Generate a download link for a JSON file"""
+    json_str = json.dumps(data, indent=4)
+    b64 = base64.b64encode(json_str.encode()).decode()
+    href = f'<a href="data:application/json;base64,{b64}" download="{filename}">{text}</a>'
+    return href
+
+def get_pdf_download_link(pdf_bytes, filename, text):
+    """Generate a download link for a PDF file"""
+    if pdf_bytes is None:
+        return ""
+    b64 = base64.b64encode(pdf_bytes).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}" target="_blank">{text}</a>'
     return href
 
 def create_pdf_report(sim_data, sim_name):
@@ -94,31 +111,15 @@ def create_pdf_report(sim_data, sim_name):
     buffer.close()
     return pdf
 
-def get_pdf_download_link(pdf_bytes, filename, text):
-    """Generate a download link for a PDF file"""
-    if pdf_bytes is None:
-        return ""
-    b64 = base64.b64encode(pdf_bytes).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}" target="_blank">{text}</a>'
-    return href
-
-def get_json_download_link(data, filename, text):
-    """Generate a download link for a JSON file"""
-    json_str = json.dumps(data, indent=4)
-    b64 = base64.b64encode(json_str.encode()).decode()
-    href = f'<a href="data:application/json;base64,{b64}" download="{filename}">{text}</a>'
-    return href
-
 def calculate_metrics(inputs):
     """Calculate all metrics from input data"""
     # Extract inputs by category
     
     # Sales metrics
     leads = inputs.get('leads', 0)
-    lead_conversion_rate = inputs.get('lead_conversion_rate', 0)
-    opportunity_conversion_rate = inputs.get('opportunity_conversion_rate', 0)
+    lead_booking_rate = inputs.get('lead_booking_rate', 0)  # Renamed
+    meeting_conversion_rate = inputs.get('meeting_conversion_rate', 0)  # Renamed
     average_deal_size = inputs.get('average_deal_size', 0)
-    price_of_offer = inputs.get('price_of_offer', 0)
     sales_cycle_length = inputs.get('sales_cycle_length', 0)
     sales_commission_rate = inputs.get('sales_commission_rate', 0)
     number_of_sdrs = inputs.get('number_of_sdrs', 0)
@@ -126,14 +127,17 @@ def calculate_metrics(inputs):
     
     # Marketing metrics
     cost_per_lead = inputs.get('cost_per_lead', 0)
+    cost_per_booked_meeting = inputs.get('cost_per_booked_meeting', 0)  # New
     marketing_spend = inputs.get('marketing_spend', 0)
     media_spend = inputs.get('media_spend', 0)
+    total_addressable_market = inputs.get('total_addressable_market', 0)  # Moved
     funnel_conversion_rate = inputs.get('funnel_conversion_rate', 0)
     click_through_rate = inputs.get('click_through_rate', 0)
     organic_views = inputs.get('organic_views', 0)
     cost_per_thousand_impressions = inputs.get('cost_per_thousand_impressions', 0)
     
     # Offer metrics
+    price_of_offer = inputs.get('price_of_offer', 0)  # Moved
     churn_rate = inputs.get('churn_rate', 0)
     contract_length = inputs.get('contract_length', 0)
     price_of_renewal = inputs.get('price_of_renewal', 0)
@@ -149,22 +153,24 @@ def calculate_metrics(inputs):
     cost_to_fulfil = inputs.get('cost_to_fulfil', 0)
     
     # Cash metrics
-    total_addressable_market = inputs.get('total_addressable_market', 0)
     initial_number_of_customers = inputs.get('initial_number_of_customers', 0)
     cash_in_bank = inputs.get('cash_in_bank', 0)
     
     # Calculate derived metrics
     
     # Sales and customer metrics
-    opportunities = leads * lead_conversion_rate
-    customers = opportunities * opportunity_conversion_rate
+    booked_meetings = leads * lead_booking_rate  # Renamed
+    customers = booked_meetings * meeting_conversion_rate  # Renamed
     revenue = customers * average_deal_size
+    
+    # Include Cost per Booked Meeting in calculations
+    total_meeting_costs = booked_meetings * cost_per_booked_meeting  # New calculation
     
     # Cost metrics
     variable_costs = leads * cost_per_lead
     commission = revenue * sales_commission_rate
     total_marketing_costs = marketing_spend + media_spend
-    total_variable_costs = variable_costs + commission
+    total_variable_costs = variable_costs + commission + total_meeting_costs  # Updated to include meeting costs
     total_costs = fixed_costs + total_variable_costs + cogs + operating_expenses
     
     # Performance metrics
@@ -188,7 +194,7 @@ def calculate_metrics(inputs):
     # Return all calculated metrics
     return {
         "inputs": inputs,
-        "opportunities": opportunities,
+        "booked_meetings": booked_meetings,
         "customers": customers,
         "revenue": revenue,
         "variable_costs": variable_costs,
@@ -207,7 +213,8 @@ def calculate_metrics(inputs):
         "cac_ratio": cac_ratio,
         "discounts_given": discounts_given,
         "refunds_given": refunds_given,
-        "seasonality_adjusted_revenue": seasonality_adjusted_revenue
+        "seasonality_adjusted_revenue": seasonality_adjusted_revenue,
+        "total_meeting_costs": total_meeting_costs  # Add new calculated metric
     }
 
 # Main title
@@ -229,10 +236,9 @@ with tab_input:
         with col1:
             st.markdown("### Sales Metrics")
             leads = st.number_input("Number of leads", min_value=0, value=100, key="leads")
-            lead_conversion_rate = st.number_input("Lead conversion rate (%)", min_value=0.0, max_value=100.0, value=20.0, key="lead_conversion_rate") / 100
-            opportunity_conversion_rate = st.number_input("Opportunity conversion rate (%)", min_value=0.0, max_value=100.0, value=30.0, key="opportunity_conversion_rate") / 100
+            lead_booking_rate = st.number_input("Lead booking rate (%)", min_value=0.0, max_value=100.0, value=20.0, key="lead_booking_rate") / 100
+            meeting_conversion_rate = st.number_input("Meeting conversion rate (%)", min_value=0.0, max_value=100.0, value=30.0, key="meeting_conversion_rate") / 100
             average_deal_size = st.number_input("Average deal size (£)", min_value=0.0, value=1000.0, key="average_deal_size")
-            price_of_offer = st.number_input("Price of offer (£)", min_value=0.0, value=500.0, key="price_of_offer")
             sales_cycle_length = st.number_input("Sales cycle length (days)", min_value=0, value=30, key="sales_cycle_length")
             number_of_sdrs = st.number_input("Number of SDRs", min_value=0, value=2, key="number_of_sdrs")
             time_to_sell_days = st.number_input("Time to sell (days)", min_value=0, value=45, key="time_to_sell_days")
@@ -240,8 +246,10 @@ with tab_input:
             
             st.markdown("### Marketing Metrics")
             cost_per_lead = st.number_input("Cost per lead (£)", min_value=0.0, value=10.0, key="cost_per_lead")
+            cost_per_booked_meeting = st.number_input("Cost per booked meeting (£)", min_value=0.0, value=50.0, key="cost_per_booked_meeting")
             marketing_spend = st.number_input("Marketing spend (£)", min_value=0.0, value=5000.0, key="marketing_spend")
             media_spend = st.number_input("Media spend (£)", min_value=0.0, value=3000.0, key="media_spend")
+            total_addressable_market = st.number_input("Total addressable market", min_value=0, value=100000, key="total_addressable_market")
             funnel_conversion_rate = st.number_input("Funnel conversion rate (%)", min_value=0.0, max_value=100.0, value=15.0, key="funnel_conversion_rate") / 100
             click_through_rate = st.number_input("Click through rate (%)", min_value=0.0, max_value=100.0, value=2.5, key="click_through_rate") / 100
             organic_views = st.number_input("Organic views per month", min_value=0, value=5000, key="organic_views")
@@ -249,6 +257,7 @@ with tab_input:
         
         with col2:
             st.markdown("### Offer Metrics")
+            price_of_offer = st.number_input("Price of offer (£)", min_value=0.0, value=500.0, key="price_of_offer")
             churn_rate = st.number_input("Churn rate (%)", min_value=0.0, max_value=100.0, value=10.0, key="churn_rate") / 100
             contract_length = st.number_input("Contract length (months)", min_value=1, value=12, key="contract_length")
             price_of_renewal = st.number_input("Price of renewal (£)", min_value=0.0, value=450.0, key="price_of_renewal")
@@ -264,7 +273,6 @@ with tab_input:
             cost_to_fulfil = st.number_input("Cost to fulfil (£)", min_value=0.0, value=200.0, key="cost_to_fulfil")
             
             st.markdown("### Cash Metrics")
-            total_addressable_market = st.number_input("Total addressable market", min_value=0, value=100000, key="total_addressable_market")
             initial_number_of_customers = st.number_input("Initial number of customers", min_value=0, value=100, key="initial_number_of_customers")
             cash_in_bank = st.number_input("Cash in the bank (£)", min_value=0.0, value=50000.0, key="cash_in_bank")
         
@@ -277,10 +285,9 @@ with tab_input:
         input_data = {
             # Sales Metrics
             "leads": leads,
-            "lead_conversion_rate": lead_conversion_rate,
-            "opportunity_conversion_rate": opportunity_conversion_rate,
+            "lead_booking_rate": lead_booking_rate,
+            "meeting_conversion_rate": meeting_conversion_rate,
             "average_deal_size": average_deal_size,
-            "price_of_offer": price_of_offer,
             "sales_cycle_length": sales_cycle_length,
             "number_of_sdrs": number_of_sdrs,
             "time_to_sell_days": time_to_sell_days,
@@ -288,14 +295,17 @@ with tab_input:
             
             # Marketing Metrics
             "cost_per_lead": cost_per_lead,
+            "cost_per_booked_meeting": cost_per_booked_meeting,
             "marketing_spend": marketing_spend,
             "media_spend": media_spend,
+            "total_addressable_market": total_addressable_market,
             "funnel_conversion_rate": funnel_conversion_rate,
             "click_through_rate": click_through_rate,
             "organic_views": organic_views,
             "cost_per_thousand_impressions": cost_per_thousand_impressions,
             
             # Offer Metrics
+            "price_of_offer": price_of_offer,
             "churn_rate": churn_rate,
             "contract_length": contract_length,
             "price_of_renewal": price_of_renewal,
@@ -311,7 +321,6 @@ with tab_input:
             "cost_to_fulfil": cost_to_fulfil,
             
             # Cash Metrics
-            "total_addressable_market": total_addressable_market,
             "initial_number_of_customers": initial_number_of_customers,
             "cash_in_bank": cash_in_bank
         }
@@ -371,7 +380,7 @@ with tab_input:
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Leads", f"{results['inputs']['leads']:,.0f}")
-                st.metric("Opportunities", f"{results['opportunities']:,.0f}")
+                st.metric("Booked Meetings", f"{results['booked_meetings']:,.0f}")
                 st.metric("Customers", f"{results['customers']:,.0f}")
             with col2:
                 st.metric("Customer Acquisition Cost", f"£{results['inputs']['customer_acquisition_cost']:,.2f}")
@@ -389,17 +398,19 @@ with tab_input:
                 st.metric("Marketing Costs", f"£{results['total_marketing_costs']:,.2f}")
                 st.metric("COGS", f"£{results['inputs']['cogs']:,.2f}")
                 st.metric("Commission", f"£{results['commission']:,.2f}")
+                st.metric("Meeting Costs", f"£{results['total_meeting_costs']:,.2f}")
             
             # Cost breakdown visualization
             st.subheader("Cost Breakdown")
             cost_data = pd.DataFrame({
-                'Category': ['Fixed Costs', 'Marketing', 'COGS', 'Commission', 'Other Variable'],
+                'Category': ['Fixed Costs', 'Marketing', 'COGS', 'Commission', 'Meeting Costs', 'Other Variable'],
                 'Amount': [
                     results['inputs']['fixed_costs'],
                     results['total_marketing_costs'],
                     results['inputs']['cogs'],
                     results['commission'],
-                    results['total_variable_costs'] - results['commission']
+                    results['total_meeting_costs'],
+                    results['total_variable_costs'] - results['commission'] - results['total_meeting_costs']
                 ]
             })
             st.bar_chart(cost_data.set_index('Category'))
@@ -429,12 +440,13 @@ with tab_compare:
                 "net_profit": "Net Profit",
                 "profit_margin": "Profit Margin",
                 "roi": "ROI",
-                "opportunities": "Opportunities",
+                "booked_meetings": "Booked Meetings",
                 "customers": "Customers",
                 "customer_lifetime_value": "Customer Lifetime Value",
                 "cac_ratio": "CLTV/CAC Ratio",
                 "total_costs": "Total Costs",
-                "total_marketing_costs": "Total Marketing Costs"
+                "total_marketing_costs": "Total Marketing Costs",
+                "total_meeting_costs": "Total Meeting Costs"
             }
             
             selected_metrics = st.multiselect(
@@ -476,15 +488,16 @@ with tab_compare:
                 
                 # Define parameter categories
                 param_categories = {
-                    "Sales": ["leads", "lead_conversion_rate", "opportunity_conversion_rate", "average_deal_size", 
-                             "price_of_offer", "sales_cycle_length", "number_of_sdrs", "time_to_sell_days", 
+                    "Sales": ["leads", "lead_booking_rate", "meeting_conversion_rate", "average_deal_size", 
+                             "sales_cycle_length", "number_of_sdrs", "time_to_sell_days", 
                              "sales_commission_rate"],
-                    "Marketing": ["cost_per_lead", "marketing_spend", "media_spend", "funnel_conversion_rate", 
+                    "Marketing": ["cost_per_lead", "cost_per_booked_meeting", "marketing_spend", "media_spend", 
+                                 "total_addressable_market", "funnel_conversion_rate", 
                                  "click_through_rate", "organic_views", "cost_per_thousand_impressions"],
-                    "Offer": ["churn_rate", "contract_length", "price_of_renewal", "rate_of_renewals", 
+                    "Offer": ["price_of_offer", "churn_rate", "contract_length", "price_of_renewal", "rate_of_renewals", 
                              "discount_rate", "refund_rate", "customer_acquisition_cost"],
                     "Operations": ["cogs", "operating_expenses", "fixed_costs", "cost_to_fulfil"],
-                    "Cash": ["total_addressable_market", "initial_number_of_customers", "cash_in_bank"]
+                    "Cash": ["initial_number_of_customers", "cash_in_bank"]
                 }
                 
                 # Let user select a category
@@ -532,7 +545,7 @@ with tab_download:
             format_func=lambda x: f"{x}: {st.session_state.simulations[x]['name']}"
         )
         
-        # Create tabs for different download formats - MOVE THIS INSIDE THE IF STATEMENT
+        # Create tabs for different download formats
         download_tabs = st.tabs(["CSV/JSON", "PDF Report"])
         
         with download_tabs[0]:
@@ -586,7 +599,8 @@ with tab_download:
             
             df_all_sims = pd.DataFrame(all_sims_data)
             
-            st.markdown(get_csv_download_link(df_all_sims, "all_simulations.csv", "Download All Simulations (CSV)"), unsafe_allow_html=True)
+            st.markdown(get_csv_download_link(df_all_sims), "all_simulations.csv",
+            st.markdown(get_csv_download_link(df_all_sims), "all_simulations.csv", "Download All Simulations (CSV)"), unsafe_allow_html=True)
             st.markdown(get_json_download_link(st.session_state.simulations, "all_simulations.json", "Download All Simulations (JSON)"), unsafe_allow_html=True)
         
         with download_tabs[1]:
@@ -613,6 +627,7 @@ with tab_download:
                 st.code("pip install reportlab", language="bash")
             elif not selected_sim:
                 st.info("Please select a simulation from the dropdown above to generate a PDF report.")
+
 # Sidebar
 with st.sidebar:
     st.header("Simulation History")
@@ -642,3 +657,4 @@ with st.sidebar:
         st.session_state.simulations = {}
         st.session_state.sim_counter = 0
         st.experimental_rerun()
+        
