@@ -150,17 +150,10 @@ with tab_input:
         col3, col4 = st.columns(2)
         
         with col3:
-            marketing_spend = st.number_input("Total marketing spend", min_value=0.0, value=5000.0)
-            product_dev_cost = st.number_input("Product development cost", min_value=0.0, value=10000.0)
-            media_spend = st.number_input("Media spend", min_value=0.0, value=3000.0)
-            time_to_market_inbound = st.number_input("Time to market inbound (days)", min_value=0, value=60)
-            time_to_market_organic = st.number_input("Time to market organic (days)", min_value=0, value=90)
-            time_to_market_outbound = st.number_input("Time to market outbound (days)", min_value=0, value=45)
+            st.write("No additional inputs needed in this section.")
         
         with col4:
-            discount_rate = st.number_input("Average discount rate (%)", min_value=0.0, max_value=100.0, value=10.0) / 100
-            refund_rate = st.number_input("Refund rate (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
-            seasonality_adjustment = st.number_input("Seasonality adjustment (% change in sales)", min_value=-100.0, max_value=100.0, value=10.0) / 100
+            st.write("All metrics have been categorized in the main sections.")
         
         submitted = st.form_submit_button("Run Simulation")
 
@@ -510,4 +503,4 @@ with tab_compare:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
                             else:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                            
+                                
