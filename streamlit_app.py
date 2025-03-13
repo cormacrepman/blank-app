@@ -34,10 +34,10 @@ def calculate_metrics(inputs):
     total_cost_leads = leads_generated * cost_per_lead
     total_cost_meetings = meetings_held * cost_per_meeting
     total_sales_team_commission = revenue_generated * sales_commission_rate
-    total_marketing_spend = marketing_spend + product_dev_cost
-    discounts_given = revenue_generated * discount_rate
-    refunds_given = revenue_generated * refund_rate
-    seasonality_adjusted_revenue = revenue_generated * (1 + seasonality_adjustment)
+    total_marketing_spend = inputs.get('marketing_spend', 0) + inputs.get('product_dev_cost', 0)
+    discounts_given = revenue_generated * inputs.get('discount_rate', 0)
+    refunds_given = revenue_generated * inputs.get('refund_rate', 0)
+    seasonality_adjusted_revenue = revenue_generated * (1 + inputs.get('seasonality_adjustment', 0))
 
     # Calculate profit and other metrics
     gross_profit = revenue_generated - cogs
@@ -178,6 +178,9 @@ with tab_input:
             "outbound_salary": outbound_salary,
             "sales_team_salary": sales_team_salary,
             "sales_commission_rate": sales_commission_rate,
+            "time_to_market_inbound": time_to_market_inbound,
+            "time_to_market_organic": time_to_market_organic,
+            "time_to_market_outbound": time_to_market_outbound,
             
             # Marketing Metrics
             "cost_per_lead": cost_per_lead,
@@ -190,30 +193,27 @@ with tab_input:
             "organic_view_to_lead_conversion_rate": organic_view_to_lead_conversion_rate,
             "lead_to_customer_conversion_rate_organic": lead_to_customer_conversion_rate_organic,
             "cost_per_thousand_impressions": cost_per_thousand_impressions,
-            "marketing_spend": marketing_spend,
-            "media_spend": media_spend,
+            "marketing_spend": marketing_spend_input,
+            "media_spend": media_spend_input,
             
             # Offer Metrics
             "churn_rate": churn_rate,
             "contract_length": contract_length,
-            "discount_rate": discount_rate,
-            "refund_rate": refund_rate,
+            "discount_rate": discount_rate_input,
+            "refund_rate": refund_rate_input,
             "refund_period": refund_period,
             "customer_acquisition_cost": customer_acquisition_cost,
             "avg_customer_lifetime_value": avg_customer_lifetime_value,
             "price_of_renewal": price_of_renewal,
             "rate_of_renewals": rate_of_renewals,
             "transaction_fees": transaction_fees,
-            "seasonality_adjustment": seasonality_adjustment,
+            "seasonality_adjustment": seasonality_adjustment_input,
             
             # Operations Metrics
             "cogs": cogs,
             "operating_expenses": operating_expenses,
             "fixed_costs_per_month": fixed_costs_per_month,
-            "product_dev_cost": product_dev_cost,
-            "time_to_market_inbound": time_to_market_inbound,
-            "time_to_market_organic": time_to_market_organic,
-            "time_to_market_outbound": time_to_market_outbound,
+            "product_dev_cost": product_dev_cost_input,
             "cost_to_fulfil": cost_to_fulfil,
             "time_to_collect": time_to_collect,
             
