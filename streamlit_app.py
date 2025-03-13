@@ -1,10 +1,21 @@
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import json
-from datetime import datetime
-import base64
+try:
+    import streamlit as st
+    import pandas as pd
+    import plotly.express as px
+    import plotly.graph_objects as go
+    import json
+    from datetime import datetime
+    import base64
+except ImportError:
+    # Handle import errors with clear messages
+    import streamlit as st
+    st.error("Some required packages are missing. Please install them with: pip install plotly pandas")
+    st.code("pip install plotly pandas", language="bash")
+    # Continue with available imports
+    import pandas as pd
+    import json
+    from datetime import datetime
+    import base64
 
 # Initialize session state for storing simulations if it doesn't exist
 if 'simulations' not in st.session_state:
@@ -23,29 +34,29 @@ tab_input, tab_compare, tab_download = st.tabs(["Run Simulation", "Compare Simul
 # Function to calculate metrics based on inputs
 def calculate_metrics(inputs):
     # Extract all inputs from the dictionary
-    locals().update(inputs)
+    # We use the dictionary directly rather than unpacking into locals
     
     # Calculate derived metrics
-    customer_retention_rate = 1 - churn_rate
-    opportunities = leads_generated * lead_conversion_rate
-    customers = opportunities * opportunity_conversion_rate
-    revenue_generated = customers * average_deal_size
-    profit_margin = (revenue_generated - (cogs + operating_expenses)) / revenue_generated if revenue_generated > 0 else 0
-    total_cost_leads = leads_generated * cost_per_lead
-    total_cost_meetings = meetings_held * cost_per_meeting
-    total_sales_team_commission = revenue_generated * sales_commission_rate
+    customer_retention_rate = 1 - inputs.get('churn_rate', 0)
+    opportunities = inputs.get('leads_generated', 0) * inputs.get('lead_conversion_rate', 0)
+    customers = opportunities * inputs.get('opportunity_conversion_rate', 0)
+    revenue_generated = customers * inputs.get('average_deal_size', 0)
+    profit_margin = (revenue_generated - (inputs.get('cogs', 0) + inputs.get('operating_expenses', 0))) / revenue_generated if revenue_generated > 0 else 0
+    total_cost_leads = inputs.get('leads_generated', 0) * inputs.get('cost_per_lead', 0)
+    total_cost_meetings = inputs.get('meetings_held', 0) * inputs.get('cost_per_meeting', 0)
+    total_sales_team_commission = revenue_generated * inputs.get('sales_commission_rate', 0)
     total_marketing_spend = inputs.get('marketing_spend', 0) + inputs.get('product_dev_cost', 0)
     discounts_given = revenue_generated * inputs.get('discount_rate', 0)
     refunds_given = revenue_generated * inputs.get('refund_rate', 0)
     seasonality_adjusted_revenue = revenue_generated * (1 + inputs.get('seasonality_adjustment', 0))
 
     # Calculate profit and other metrics
-    gross_profit = revenue_generated - cogs
-    operating_profit = gross_profit - operating_expenses
+    gross_profit = revenue_generated - inputs.get('cogs', 0)
+    operating_profit = gross_profit - inputs.get('operating_expenses', 0)
     net_profit = operating_profit - total_sales_team_commission - total_marketing_spend
     break_even_point = total_cost_leads + total_cost_meetings
     roi = (net_profit / total_marketing_spend) * 100 if total_marketing_spend > 0 else 0
-    cltv_cac_ratio = avg_customer_lifetime_value / customer_acquisition_cost if customer_acquisition_cost > 0 else 0
+    cltv_cac_ratio = inputs.get('avg_customer_lifetime_value', 0) / inputs.get('customer_acquisition_cost', 0) if inputs.get('customer_acquisition_cost', 0) > 0 else 0
     
     # Return all calculated metrics
     return {
@@ -178,9 +189,9 @@ with tab_input:
             "outbound_salary": outbound_salary,
             "sales_team_salary": sales_team_salary,
             "sales_commission_rate": sales_commission_rate,
-            "time_to_market_inbound": time_to_market_inbound,
-            "time_to_market_organic": time_to_market_organic,
-            "time_to_market_outbound": time_to_market_outbound,
+            "time_to_market_inbound": sales_time_to_market_inbound,
+            "time_to_market_organic": sales_time_to_market_organic,
+            "time_to_market_outbound": sales_time_to_market_outbound,
             
             # Marketing Metrics
             "cost_per_lead": cost_per_lead,
