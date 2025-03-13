@@ -1,3 +1,128 @@
+# Sidebar with simulation history
+with st.sidebar:
+    st.header("Simulation History")
+    
+    if len(st.session_state.simulations) == 0:
+        st.info("No simulations have been run yet.")
+    else:
+        for sim_id, sim in st.session_state.simulations.items():
+            st.write(f"**{sim_id}**: {sim['name']}")
+            st.write(f"*Run at: {sim['timestamp']}*")
+            
+            # Show key metrics
+            st.write(f"Revenue: £{sim['data']['revenue_generated']:,.2f}")
+            st.write(f"Net Profit: £{sim['data']['net_profit']:,.2f}")
+            st.write(f"ROI: {sim['data']['roi']:.2f}%")
+            
+            # Add delete button for individual simulation
+            if st.button(f"Delete {sim_id}", key=f"delete_{sim_id}"):
+                del st.session_state.simulations[sim_id]
+                st.success(f"Deleted {sim_id}")
+                st.experimental_rerun()
+            
+            st.write("---")
+    
+    # Clear all simulations button
+    if st.button("Clear All Simulations"):
+        st.session_state.simulations = {}
+        st.session_state.sim_counter = 0
+        st.experimental_rerun()# Tab 3: Download Data
+with tab_download:
+    if len(st.session_state.simulations) == 0:
+        st.warning("No simulations have been run. Please run at least one simulation in the 'Run Simulation' tab.")
+    else:
+        st.subheader("Download Simulation Data")
+        
+        # Select simulation to download
+        sim_options = list(st.session_state.simulations.keys())
+        
+        selected_sim = st.selectbox(
+            "Select simulation to download",
+            options=sim_options,
+            format_func=lambda x: f"{x}: {st.session_state.simulations[x]['name']}"
+        )
+        
+        if selected_sim:
+            sim = st.session_state.simulations[selected_sim]
+            
+            st.write(f"### Download options for: {sim['name']}")
+            
+            # Create dataframes for different aspects of the simulation
+            
+            # 1. Input parameters
+            input_data = sim['data']['inputs']
+            df_inputs = pd.DataFrame([input_data])
+            
+            # 2. Output metrics
+            output_data = {k: v for k, v in sim['data'].items() if k != 'inputs'}
+            df_outputs = pd.DataFrame([output_data])
+            
+            # 3. All combined
+            combined_data = {**input_data, **output_data}
+            df_combined = pd.DataFrame([combined_data])
+            
+            # Create tabs for different download formats
+            download_tabs = st.tabs(["CSV/JSON", "PDF Report"])
+            
+            with download_tabs[0]:
+                # CSV and JSON downloads
+                st.markdown(get_csv_download_link(df_inputs, f"{sim['name']}_inputs.csv", "Download Input Parameters (CSV)"), unsafe_allow_html=True)
+                st.markdown(get_csv_download_link(df_outputs, f"{sim['name']}_outputs.csv", "Download Output Metrics (CSV)"), unsafe_allow_html=True)
+                st.markdown(get_csv_download_link(df_combined, f"{sim['name']}_combined.csv", "Download All Data (CSV)"), unsafe_allow_html=True)
+                
+                # JSON download option
+                json_str = json.dumps(sim['data'], indent=4)
+                st.markdown(get_json_download_link(sim['data'], f"{sim['name']}_full.json", "Download Full Simulation Data (JSON)"), unsafe_allow_html=True)
+                
+                # Show all simulations download
+                st.write("### Download All Simulations")
+                
+                # Create a combined dataframe of all simulations
+                all_sims_data = []
+                
+                for sim_id, sim_data in st.session_state.simulations.items():
+                    row = {
+                        "Simulation ID": sim_id,
+                        "Simulation Name": sim_data["name"],
+                        "Timestamp": sim_data["timestamp"]
+                    }
+                    
+                    # Add input parameters
+                    for param, value in sim_data["data"]["inputs"].items():
+                        row[f"Input: {param}"] = value
+                    
+                    # Add output metrics
+                    for metric, value in {k: v for k, v in sim_data["data"].items() if k != 'inputs'}.items():
+                        row[f"Output: {metric}"] = value
+                    
+                    all_sims_data.append(row)
+                
+                df_all_sims = pd.DataFrame(all_sims_data)
+                
+                st.markdown(get_csv_download_link(df_all_sims, "all_simulations.csv", "Download All Simulations (CSV)"), unsafe_allow_html=True)
+                st.markdown(get_json_download_link(st.session_state.simulations, "all_simulations.json", "Download All Simulations (JSON)"), unsafe_allow_html=True)
+            
+            with download_tabs[1]:
+                # PDF Report
+                if REPORTLAB_AVAILABLE:
+                    st.write("Generate a comprehensive PDF report of this simulation.")
+                    
+                    # Generate PDF
+                    pdf_bytes = create_pdf_report(sim['data'], sim['name'])
+                    
+                    # Download button
+                    st.markdown(get_pdf_download_link(pdf_bytes, f"{sim['name']}_report.pdf", "Download PDF Report"), unsafe_allow_html=True)
+                    
+                    # Preview button
+                    if st.button("Preview PDF in Browser"):
+                        # Convert PDF to base64 string
+                        b64 = base64.b64encode(pdf_bytes).decode()
+                        # Display PDF in an iframe
+                        pdf_display = f'<iframe src="data:application/pdf;base64,{b64}" width="700" height="1000" type="application/pdf"></iframe>'
+                        st.markdown(pdf_display, unsafe_allow_html=True)
+                else:
+                    st.warning("PDF report generation requires ReportLab. Install with: pip install reportlab")
+                    st.code("pip install reportlab", language="bash")
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -51,6 +176,14 @@ def get_json_download_link(data, filename, text):
     json_str = json.dumps(data, indent=4)
     b64 = base64.b64encode(json_str.encode()).decode()
     href = f'<a href="data:application/json;base64,{b64}" download="{filename}">{text}</a>'
+    return href
+
+def get_pdf_download_link(pdf_bytes, filename, text):
+    """Generate a download link for a PDF file"""
+    if pdf_bytes is None:
+        return ""
+    b64 = base64.b64encode(pdf_bytes).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}" target="_blank">{text}</a>'
     return href
 
 def create_pdf_report(sim_data, sim_name):
@@ -171,14 +304,6 @@ def create_pdf_report(sim_data, sim_name):
     pdf = buffer.getvalue()
     buffer.close()
     return pdf
-
-def get_pdf_download_link(pdf_bytes, filename, text):
-    """Generate a download link for a PDF file"""
-    if pdf_bytes is None:
-        return ""
-    b64 = base64.b64encode(pdf_bytes).decode()
-    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}" target="_blank">{text}</a>'
-    return href
 
 def calculate_metrics(inputs):
     """Calculate all derived metrics from input data"""
@@ -675,5 +800,4 @@ with tab_compare:
                     options=input_params,
                     default=[],
                     format_func=lambda x: param_options.get(x, x)
-                )''
-                '
+                )
