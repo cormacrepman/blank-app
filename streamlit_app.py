@@ -161,61 +161,70 @@ with tab_input:
     if submitted:
         # Collect all inputs into a dictionary
         input_data = {
+            # Sales Metrics
             "leads_generated": leads_generated,
             "lead_conversion_rate": lead_conversion_rate,
             "opportunity_conversion_rate": opportunity_conversion_rate,
             "average_deal_size": average_deal_size,
-            "cost_per_lead": cost_per_lead,
-            "cost_per_meeting": cost_per_meeting,
             "meetings_held": meetings_held,
             "follow_ups_per_lead": follow_ups_per_lead,
             "sales_cycle_length": sales_cycle_length,
-            "cogs": cogs,
-            "customer_acquisition_cost": customer_acquisition_cost,
-            "contract_length": contract_length,
-            "avg_customer_lifetime_value": avg_customer_lifetime_value,
-            "churn_rate": churn_rate,
-            "operating_expenses": operating_expenses,
-            "sales_team_salary": sales_team_salary,
-            "sales_commission_rate": sales_commission_rate,
-            "marketing_spend": marketing_spend,
-            "product_dev_cost": product_dev_cost,
-            "discount_rate": discount_rate,
-            "refund_rate": refund_rate,
-            "seasonality_adjustment": seasonality_adjustment,
             "price_of_offer": price_of_offer,
-            "price_of_renewal": price_of_renewal,
-            "rate_of_renewals": rate_of_renewals,
-            "media_spend": media_spend,
-            "funnel_conversion_rate": funnel_conversion_rate,
-            "lead_to_customer_conversion_rate_inbound": lead_to_customer_conversion_rate_inbound,
-            "fixed_costs_per_month": fixed_costs_per_month,
-            "cost_per_thousand_impressions": cost_per_thousand_impressions,
-            "conversion_rate_outbound": conversion_rate_outbound,
-            "click_through_rate": click_through_rate,
-            "time_to_market_inbound": time_to_market_inbound,
-            "organic_views_per_month": organic_views_per_month,
-            "organic_view_to_lead_conversion_rate": organic_view_to_lead_conversion_rate,
-            "lead_to_customer_conversion_rate_organic": lead_to_customer_conversion_rate_organic,
-            "time_to_market_organic": time_to_market_organic,
-            "time_to_market_outbound": time_to_market_outbound,
-            "outbound_salary": outbound_salary,
             "number_of_sdrs": number_of_sdrs,
             "contact_per_month_per_sdr": contact_per_month_per_sdr,
             "average_deals_per_sales_rep_per_month": average_deals_per_sales_rep_per_month,
             "cost_to_sell_percentage": cost_to_sell_percentage,
             "time_to_sell_days": time_to_sell_days,
+            "outbound_salary": outbound_salary,
+            "sales_team_salary": sales_team_salary,
+            "sales_commission_rate": sales_commission_rate,
+            
+            # Marketing Metrics
+            "cost_per_lead": cost_per_lead,
+            "cost_per_meeting": cost_per_meeting,
+            "funnel_conversion_rate": funnel_conversion_rate,
+            "conversion_rate_outbound": conversion_rate_outbound,
+            "click_through_rate": click_through_rate,
+            "lead_to_customer_conversion_rate_inbound": lead_to_customer_conversion_rate_inbound,
+            "organic_views_per_month": organic_views_per_month,
+            "organic_view_to_lead_conversion_rate": organic_view_to_lead_conversion_rate,
+            "lead_to_customer_conversion_rate_organic": lead_to_customer_conversion_rate_organic,
+            "cost_per_thousand_impressions": cost_per_thousand_impressions,
+            "marketing_spend": marketing_spend,
+            "media_spend": media_spend,
+            
+            # Offer Metrics
+            "churn_rate": churn_rate,
+            "contract_length": contract_length,
+            "discount_rate": discount_rate,
+            "refund_rate": refund_rate,
+            "refund_period": refund_period,
+            "customer_acquisition_cost": customer_acquisition_cost,
+            "avg_customer_lifetime_value": avg_customer_lifetime_value,
+            "price_of_renewal": price_of_renewal,
+            "rate_of_renewals": rate_of_renewals,
+            "transaction_fees": transaction_fees,
+            "seasonality_adjustment": seasonality_adjustment,
+            
+            # Operations Metrics
+            "cogs": cogs,
+            "operating_expenses": operating_expenses,
+            "fixed_costs_per_month": fixed_costs_per_month,
+            "product_dev_cost": product_dev_cost,
+            "time_to_market_inbound": time_to_market_inbound,
+            "time_to_market_organic": time_to_market_organic,
+            "time_to_market_outbound": time_to_market_outbound,
             "cost_to_fulfil": cost_to_fulfil,
             "time_to_collect": time_to_collect,
-            "refund_period": refund_period,
+            
+            # Cash Metrics
             "total_addressable_market": total_addressable_market,
             "initial_number_of_customers": initial_number_of_customers,
             "cash_in_the_bank": cash_in_the_bank,
             "assets": assets,
             "liabilities": liabilities,
             "debt": debt,
-            "debt_interest_rate": debt_interest_rate,
-            "transaction_fees": transaction_fees
+            "debt_interest_rate": debt_interest_rate
         }
         
         # Calculate metrics
@@ -503,4 +512,3 @@ with tab_compare:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
                             else:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                                
