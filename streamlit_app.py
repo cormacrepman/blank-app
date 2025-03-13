@@ -1,40 +1,194 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import json
-from datetime import datetime
 import base64
+from datetime import datetime
+import io
 
-# Try to import plotly, but provide fallbacks if it's not available
+# Set page configuration first (must be the first Streamlit command)
+st.set_page_config(
+    page_title="Sales Metrics Simulator",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Try to import optional dependencies with fallbacks
 try:
     import plotly.express as px
     import plotly.graph_objects as go
     PLOTLY_AVAILABLE = True
 except ImportError:
     PLOTLY_AVAILABLE = False
-    st.error("Plotly package is not installed. Install with: pip install plotly")
+    
+# Try to import ReportLab for PDF generation
+try:
+    from reportlab.lib.pagesizes import letter, A4
+    from reportlab.lib import colors
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.units import inch
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
 
-# Initialize session state for storing simulations if it doesn't exist
+# Initialize session state
 if 'simulations' not in st.session_state:
     st.session_state.simulations = {}
     st.session_state.sim_counter = 0
 
-# Set page title and configuration
-st.set_page_config(page_title="Comprehensive Sales Metrics Simulator", layout="wide")
+# ====== UTILITY FUNCTIONS ======
 
-st.title("Comprehensive Sales Metrics Simulator")
-st.write("Enter your sales metrics to generate a comprehensive analysis. You can run multiple simulations to compare results.")
+def get_csv_download_link(df, filename, text):
+    """Generate a download link for a CSV file"""
+    csv = df.to_csv(index=False)
+    b64 = base64.b64encode(csv.encode()).decode()
+    href = f'<a href="data:file/csv;base64,{b64}" download="{filename}">{text}</a>'
+    return href
 
-# Create tabs for input form and simulation comparison
-tab_input, tab_compare, tab_download = st.tabs(["Run Simulation", "Compare Simulations", "Download Data"])
+def get_json_download_link(data, filename, text):
+    """Generate a download link for a JSON file"""
+    json_str = json.dumps(data, indent=4)
+    b64 = base64.b64encode(json_str.encode()).decode()
+    href = f'<a href="data:application/json;base64,{b64}" download="{filename}">{text}</a>'
+    return href
 
-# Function to calculate metrics based on inputs
+def create_pdf_report(sim_data, sim_name):
+    """Create a PDF report for a simulation"""
+    if not REPORTLAB_AVAILABLE:
+        return None
+    
+    # Create a file-like buffer to receive PDF data
+    buffer = io.BytesIO()
+    
+    # Create the PDF object
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    title_style = styles['Heading1']
+    subtitle_style = styles['Heading2']
+    normal_style = styles['Normal']
+    
+    # Add title
+    elements.append(Paragraph(f"Simulation Report: {sim_name}", title_style))
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Add timestamp
+    elements.append(Paragraph(f"Generated on: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", normal_style))
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Add summary section
+    elements.append(Paragraph("Summary Results", subtitle_style))
+    
+    # Create summary table
+    summary_data = [
+        ["Metric", "Value"],
+        ["Revenue", f"£{sim_data['revenue_generated']:,.2f}"],
+        ["Gross Profit", f"£{sim_data['gross_profit']:,.2f}"],
+        ["Net Profit", f"£{sim_data['net_profit']:,.2f}"],
+        ["Profit Margin", f"{sim_data['profit_margin']:.2%}"],
+        ["ROI", f"{sim_data['roi']:.2f}%"],
+        ["Customers", f"{sim_data['customers']:.0f}"],
+        ["CLTV/CAC Ratio", f"{sim_data['cltv_cac_ratio']:.2f}x"]
+    ]
+    
+    # Create the table
+    summary_table = Table(summary_data, colWidths=[2.5*inch, 2.5*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (1, 0), 'CENTER'),
+        ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+        ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+        ('BACKGROUND', (0, 1), (1, -1), colors.beige),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+    ]))
+    
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Add Input Parameters section by category
+    elements.append(Paragraph("Input Parameters", subtitle_style))
+    
+    # Organize inputs by category
+    categories = {
+        "Sales Metrics": ["leads_generated", "lead_conversion_rate", "opportunity_conversion_rate", 
+                         "average_deal_size", "meetings_held", "sales_cycle_length", "price_of_offer"],
+        "Marketing Metrics": ["cost_per_lead", "marketing_spend", "media_spend", "funnel_conversion_rate"],
+        "Offer Metrics": ["churn_rate", "contract_length", "customer_acquisition_cost", "avg_customer_lifetime_value"],
+        "Operations Metrics": ["cogs", "operating_expenses", "fixed_costs_per_month"],
+        "Cash Metrics": ["cash_in_the_bank", "assets", "liabilities", "debt"]
+    }
+    
+    # Format values for display
+    def format_value(key, value):
+        if key in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
+                  "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
+                  "rate_of_renewals", "funnel_conversion_rate"]:
+            return f"{value:.2%}"
+        elif key in ["price_of_offer", "average_deal_size", "marketing_spend", "media_spend", 
+                    "cogs", "operating_expenses", "fixed_costs_per_month", "cash_in_the_bank",
+                    "assets", "liabilities", "debt"]:
+            return f"£{value:,.2f}"
+        else:
+            return f"{value}"
+    
+    # Add tables for each category
+    for category, params in categories.items():
+        elements.append(Paragraph(category, styles["Heading3"]))
+        
+        # Create table data
+        table_data = [["Parameter", "Value"]]
+        
+        for param in params:
+            if param in sim_data["inputs"]:
+                formatted_name = " ".join(word.capitalize() for word in param.split("_"))
+                formatted_value = format_value(param, sim_data["inputs"][param])
+                table_data.append([formatted_name, formatted_value])
+        
+        # Create the table
+        param_table = Table(table_data, colWidths=[3*inch, 2*inch])
+        param_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (1, 0), 'CENTER'),
+            ('FONTNAME', (0, 0), (1, 0), 'Helvetica-Bold'),
+            ('BOTTOMPADDING', (0, 0), (1, 0), 12),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (1, 1), (1, -1), 'RIGHT'),
+        ]))
+        
+        elements.append(param_table)
+        elements.append(Spacer(1, 0.25*inch))
+    
+    # Build the PDF
+    doc.build(elements)
+    
+    # Get the value of the BytesIO buffer
+    pdf = buffer.getvalue()
+    buffer.close()
+    return pdf
+
+def get_pdf_download_link(pdf_bytes, filename, text):
+    """Generate a download link for a PDF file"""
+    if pdf_bytes is None:
+        return ""
+    b64 = base64.b64encode(pdf_bytes).decode()
+    href = f'<a href="data:application/pdf;base64,{b64}" download="{filename}" target="_blank">{text}</a>'
+    return href
+
 def calculate_metrics(inputs):
-    # Calculate derived metrics using dictionary access
+    """Calculate all derived metrics from input data"""
+    # Customer metrics
     customer_retention_rate = 1 - inputs.get('churn_rate', 0)
     opportunities = inputs.get('leads_generated', 0) * inputs.get('lead_conversion_rate', 0)
     customers = opportunities * inputs.get('opportunity_conversion_rate', 0)
+    
+    # Financial metrics
     revenue_generated = customers * inputs.get('average_deal_size', 0)
-    profit_margin = (revenue_generated - (inputs.get('cogs', 0) + inputs.get('operating_expenses', 0))) / revenue_generated if revenue_generated > 0 else 0
     total_cost_leads = inputs.get('leads_generated', 0) * inputs.get('cost_per_lead', 0)
     total_cost_meetings = inputs.get('meetings_held', 0) * inputs.get('cost_per_meeting', 0)
     total_sales_team_commission = revenue_generated * inputs.get('sales_commission_rate', 0)
@@ -43,19 +197,20 @@ def calculate_metrics(inputs):
     refunds_given = revenue_generated * inputs.get('refund_rate', 0)
     seasonality_adjusted_revenue = revenue_generated * (1 + inputs.get('seasonality_adjustment', 0))
 
-    # Calculate profit and other metrics
+    # Profit calculations
     gross_profit = revenue_generated - inputs.get('cogs', 0)
     operating_profit = gross_profit - inputs.get('operating_expenses', 0)
     net_profit = operating_profit - total_sales_team_commission - total_marketing_spend
+    
+    # Performance metrics
+    profit_margin = (revenue_generated - (inputs.get('cogs', 0) + inputs.get('operating_expenses', 0))) / revenue_generated if revenue_generated > 0 else 0
     break_even_point = total_cost_leads + total_cost_meetings
     roi = (net_profit / total_marketing_spend) * 100 if total_marketing_spend > 0 else 0
     cltv_cac_ratio = inputs.get('avg_customer_lifetime_value', 0) / inputs.get('customer_acquisition_cost', 0) if inputs.get('customer_acquisition_cost', 0) > 0 else 0
     
-    # Return all calculated metrics
+    # Return all metrics in a structured dictionary
     return {
-        # Input parameters (for reference)
         "inputs": inputs,
-        # Derived metrics
         "opportunities": opportunities,
         "customers": customers,
         "revenue_generated": revenue_generated,
@@ -76,27 +231,28 @@ def calculate_metrics(inputs):
         "cltv_cac_ratio": cltv_cac_ratio
     }
 
-# Function to get download link for a dataframe
-def get_download_link(df, filename, text):
-    csv = df.to_csv(index=False)
-    b64 = base64.b64encode(csv.encode()).decode()
-    href = f'<a href="data:file/csv;base64,{b64}" download="{filename}">Download {text}</a>'
-    return href
+# ====== MAIN APPLICATION ======
 
-# Function to get download link for JSON data
-def get_json_download_link(data, filename, text):
-    json_str = json.dumps(data, indent=4)
-    b64 = base64.b64encode(json_str.encode()).decode()
-    href = f'<a href="data:file/json;base64,{b64}" download="{filename}">Download {text}</a>'
-    return href
+st.title("Comprehensive Sales Metrics Simulator")
+st.write("Enter your sales metrics to generate a comprehensive analysis. You can run multiple simulations to compare results.")
 
-# Input form tab
+# Display missing package warnings
+if not PLOTLY_AVAILABLE:
+    st.warning("📊 Plotly is not installed. Some visualizations won't be available. Install with: pip install plotly")
+    
+if not REPORTLAB_AVAILABLE:
+    st.warning("📄 ReportLab is not installed. PDF export won't be available. Install with: pip install reportlab")
+
+# Create tabs
+tab_input, tab_compare, tab_download = st.tabs(["Run Simulation", "Compare Simulations", "Download Data"])
+
+# Tab 1: Input Form
 with tab_input:
     with st.form("sales_metrics_form"):
-        # Optional simulation name
+        # Simulation name
         sim_name = st.text_input("Simulation Name (optional)", value=f"Simulation {st.session_state.sim_counter + 1}")
         
-        # Create two columns
+        # Create two columns for form inputs
         col1, col2 = st.columns(2)
         
         with col1:
@@ -166,18 +322,10 @@ with tab_input:
             debt = st.number_input("Debt", min_value=0.0, value=10000.0, key="debt")
             debt_interest_rate = st.number_input("Debt interest rate (%)", min_value=0.0, max_value=100.0, value=5.0, key="debt_interest_rate") / 100
         
-        st.markdown("### Additional Notes")
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            st.info("All metrics have been categorized in the main sections above.")
-        
-        with col4:
-            st.info("Click 'Run Simulation' to calculate and visualize results.")
-        
+        # Submit button
         submitted = st.form_submit_button("Run Simulation")
-
-    # Calculate metrics when form is submitted
+    
+    # Process form submission
     if submitted:
         # Collect all inputs into a dictionary
         input_data = {
@@ -250,7 +398,7 @@ with tab_input:
         # Calculate metrics
         results = calculate_metrics(input_data)
         
-        # Store simulation with timestamp
+        # Store simulation
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sim_id = f"Sim {st.session_state.sim_counter + 1}"
         
@@ -265,10 +413,10 @@ with tab_input:
         
         st.session_state.sim_counter += 1
         
-        # Display results for this simulation
+        # Display success message
         st.success(f"Simulation '{sim_name}' completed and saved!")
         
-        # Display results in an organized way
+        # Display results
         st.header(f"Results for {sim_name}")
         
         # Results in tabs
@@ -310,10 +458,10 @@ with tab_input:
                 st.metric("Discounts Given", f"£{results['discounts_given']:,.2f}")
                 st.metric("Refunds Given", f"£{results['refunds_given']:,.2f}")
         
-        # Visualizations
+        # Visualizations (if plotly is available)
         st.subheader("Key Metrics Visualization")
         
-        # Revenue breakdown
+        # Revenue breakdown data
         revenue_data = {
             'Category': ['Gross Revenue', 'After Discounts', 'After Refunds', 'Seasonality Adjusted'],
             'Amount': [
@@ -323,17 +471,9 @@ with tab_input:
                 results['seasonality_adjusted_revenue']
             ]
         }
-        
         df_revenue = pd.DataFrame(revenue_data)
         
-        if PLOTLY_AVAILABLE:
-            fig_revenue = px.bar(df_revenue, x='Category', y='Amount', title='Revenue Breakdown')
-            st.plotly_chart(fig_revenue)
-        else:
-            st.warning("Plotly visualization unavailable. Please install plotly package.")
-            st.dataframe(df_revenue)
-        
-        # Profit waterfall
+        # Profit waterfall data
         profit_data = {
             'Stage': ['Revenue', 'COGS', 'Gross Profit', 'Operating Expenses', 'Commissions', 'Marketing', 'Net Profit'],
             'Value': [
@@ -347,19 +487,28 @@ with tab_input:
             ],
             'Type': ['Revenue', 'Cost', 'Profit', 'Cost', 'Cost', 'Cost', 'Profit']
         }
-        
         df_profit = pd.DataFrame(profit_data)
         
+        # Visualizations with Plotly or Fallback
         if PLOTLY_AVAILABLE:
+            # Revenue breakdown
+            fig_revenue = px.bar(df_revenue, x='Category', y='Amount', title='Revenue Breakdown')
+            st.plotly_chart(fig_revenue, use_container_width=True)
+            
+            # Profit waterfall
             fig_profit = px.bar(df_profit, x='Stage', y='Value', color='Type', 
                                 title='Profit Waterfall', 
                                 color_discrete_map={'Revenue': 'green', 'Cost': 'red', 'Profit': 'blue'})
-            st.plotly_chart(fig_profit)
+            st.plotly_chart(fig_profit, use_container_width=True)
         else:
-            st.warning("Plotly visualization unavailable. Please install plotly package.")
+            # Fallback to regular tables if plotly not available
+            st.write("Revenue Breakdown:")
+            st.dataframe(df_revenue)
+            
+            st.write("Profit Waterfall:")
             st.dataframe(df_profit)
 
-# Comparison tab
+# Tab 2: Compare Simulations
 with tab_compare:
     if len(st.session_state.simulations) == 0:
         st.warning("No simulations have been run. Please run at least one simulation in the 'Run Simulation' tab.")
@@ -456,9 +605,10 @@ with tab_compare:
                                 # Add pound symbol
                                 fig.update_layout(yaxis_title=f"{metric_name} (£)")
                         
-                        st.plotly_chart(fig)
+                        st.plotly_chart(fig, use_container_width=True)
                     else:
-                        st.warning("Plotly visualization unavailable. Please install plotly package.")
+                        # Fallback
+                        st.write(f"Comparison of {metric_name}:")
                         st.dataframe(df_chart)
                 
                 # Input parameter comparison
@@ -525,64 +675,4 @@ with tab_compare:
                     options=input_params,
                     default=[],
                     format_func=lambda x: param_options.get(x, x)
-                )
-                
-                if selected_params:
-                    # Create input comparison dataframe
-                    input_comparison_data = []
-                    
-                    for sim_id in selected_sims:
-                        sim = st.session_state.simulations[sim_id]
-                        row = {"Simulation": sim["name"]}
-                        
-                        for param in selected_params:
-                            if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
-                                       "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
-                                       "rate_of_renewals", "funnel_conversion_rate", "lead_to_customer_conversion_rate_inbound",
-                                       "conversion_rate_outbound", "click_through_rate", "organic_view_to_lead_conversion_rate",
-                                       "lead_to_customer_conversion_rate_organic", "cost_to_sell_percentage", 
-                                       "debt_interest_rate", "transaction_fees"]:
-                                # Format as percentage
-                                row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                            else:
-                                row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                        
-                        input_comparison_data.append(row)
-                    
-                    df_input_comparison = pd.DataFrame(input_comparison_data)
-                    
-                    # Display input comparison table
-                    st.dataframe(df_input_comparison)
-                    
-                    # Visualize input comparisons
-                    for param in selected_params:
-                        # Create a bar chart for each selected parameter
-                        param_name = param_options.get(param, param)
-                        
-                        chart_data = {
-                            'Simulation': [st.session_state.simulations[sim_id]['name'] for sim_id in selected_sims],
-                            'Value': [st.session_state.simulations[sim_id]['data']['inputs'][param] for sim_id in selected_sims]
-                        }
-                        
-                        df_chart = pd.DataFrame(chart_data)
-                        
-                        if PLOTLY_AVAILABLE:
-                            if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
-                                      "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
-                                      "rate_of_renewals", "funnel_conversion_rate", "lead_to_customer_conversion_rate_inbound",
-                                      "conversion_rate_outbound", "click_through_rate", "organic_view_to_lead_conversion_rate",
-                                      "lead_to_customer_conversion_rate_organic", "cost_to_sell_percentage", 
-                                      "debt_interest_rate", "transaction_fees"]:
-                                # Format as percentage
-                                fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {param_name}",
-                                            labels={"Value": f"{param_name} (%)"})
-                                # Convert to percentage for display
-                                fig.update_layout(yaxis_tickformat='.2%')
-                            else:
-                                fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {param_name}")
-                            
-                            st.plotly_chart(fig)
-                        else:
-                            st.warning("Plotly visualization unavailable. Please install plotly package.")
-                            st.dataframe(df_chart)
-                            
+                )'
