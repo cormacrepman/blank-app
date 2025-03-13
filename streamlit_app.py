@@ -1,21 +1,17 @@
+import streamlit as st
+import pandas as pd
+import json
+from datetime import datetime
+import base64
+
+# Try to import plotly, but provide fallbacks if it's not available
 try:
-    import streamlit as st
-    import pandas as pd
     import plotly.express as px
     import plotly.graph_objects as go
-    import json
-    from datetime import datetime
-    import base64
+    PLOTLY_AVAILABLE = True
 except ImportError:
-    # Handle import errors with clear messages
-    import streamlit as st
-    st.error("Some required packages are missing. Please install them with: pip install plotly pandas")
-    st.code("pip install plotly pandas", language="bash")
-    # Continue with available imports
-    import pandas as pd
-    import json
-    from datetime import datetime
-    import base64
+    PLOTLY_AVAILABLE = False
+    st.error("Plotly package is not installed. Install with: pip install plotly")
 
 # Initialize session state for storing simulations if it doesn't exist
 if 'simulations' not in st.session_state:
@@ -33,7 +29,7 @@ tab_input, tab_compare, tab_download = st.tabs(["Run Simulation", "Compare Simul
 
 # Function to calculate metrics based on inputs
 def calculate_metrics(inputs):
-    # Calculate derived metrics using dictionary access instead of local variables
+    # Calculate derived metrics using dictionary access
     customer_retention_rate = 1 - inputs.get('churn_rate', 0)
     opportunities = inputs.get('leads_generated', 0) * inputs.get('lead_conversion_rate', 0)
     customers = opportunities * inputs.get('opportunity_conversion_rate', 0)
@@ -330,10 +326,10 @@ with tab_input:
         
         df_revenue = pd.DataFrame(revenue_data)
         
-        try:
+        if PLOTLY_AVAILABLE:
             fig_revenue = px.bar(df_revenue, x='Category', y='Amount', title='Revenue Breakdown')
             st.plotly_chart(fig_revenue)
-        except NameError:
+        else:
             st.warning("Plotly visualization unavailable. Please install plotly package.")
             st.dataframe(df_revenue)
         
@@ -354,12 +350,12 @@ with tab_input:
         
         df_profit = pd.DataFrame(profit_data)
         
-        try:
+        if PLOTLY_AVAILABLE:
             fig_profit = px.bar(df_profit, x='Stage', y='Value', color='Type', 
                                 title='Profit Waterfall', 
                                 color_discrete_map={'Revenue': 'green', 'Cost': 'red', 'Profit': 'blue'})
             st.plotly_chart(fig_profit)
-        except NameError:
+        else:
             st.warning("Plotly visualization unavailable. Please install plotly package.")
             st.dataframe(df_profit)
 
@@ -444,7 +440,7 @@ with tab_compare:
                     
                     df_chart = pd.DataFrame(chart_data)
                     
-                    try:
+                    if PLOTLY_AVAILABLE:
                         if metric in ["profit_margin", "cltv_cac_ratio"]:
                             # Format as percentage
                             fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}",
@@ -461,7 +457,7 @@ with tab_compare:
                                 fig.update_layout(yaxis_title=f"{metric_name} (£)")
                         
                         st.plotly_chart(fig)
-                    except NameError:
+                    else:
                         st.warning("Plotly visualization unavailable. Please install plotly package.")
                         st.dataframe(df_chart)
                 
@@ -522,3 +518,71 @@ with tab_compare:
                     "debt": "Debt",
                     "debt_interest_rate": "Debt Interest Rate",
                     "transaction_fees": "Transaction Fees"
+                }
+                
+                selected_params = st.multiselect(
+                    "Select input parameters to compare",
+                    options=input_params,
+                    default=[],
+                    format_func=lambda x: param_options.get(x, x)
+                )
+                
+                if selected_params:
+                    # Create input comparison dataframe
+                    input_comparison_data = []
+                    
+                    for sim_id in selected_sims:
+                        sim = st.session_state.simulations[sim_id]
+                        row = {"Simulation": sim["name"]}
+                        
+                        for param in selected_params:
+                            if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
+                                       "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
+                                       "rate_of_renewals", "funnel_conversion_rate", "lead_to_customer_conversion_rate_inbound",
+                                       "conversion_rate_outbound", "click_through_rate", "organic_view_to_lead_conversion_rate",
+                                       "lead_to_customer_conversion_rate_organic", "cost_to_sell_percentage", 
+                                       "debt_interest_rate", "transaction_fees"]:
+                                # Format as percentage
+                                row[param_options.get(param, param)] = sim["data"]["inputs"][param]
+                            else:
+                                row[param_options.get(param, param)] = sim["data"]["inputs"][param]
+                        
+                        input_comparison_data.append(row)
+                    
+                    df_input_comparison = pd.DataFrame(input_comparison_data)
+                    
+                    # Display input comparison table
+                    st.dataframe(df_input_comparison)
+                    
+                    # Visualize input comparisons
+                    for param in selected_params:
+                        # Create a bar chart for each selected parameter
+                        param_name = param_options.get(param, param)
+                        
+                        chart_data = {
+                            'Simulation': [st.session_state.simulations[sim_id]['name'] for sim_id in selected_sims],
+                            'Value': [st.session_state.simulations[sim_id]['data']['inputs'][param] for sim_id in selected_sims]
+                        }
+                        
+                        df_chart = pd.DataFrame(chart_data)
+                        
+                        if PLOTLY_AVAILABLE:
+                            if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
+                                      "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
+                                      "rate_of_renewals", "funnel_conversion_rate", "lead_to_customer_conversion_rate_inbound",
+                                      "conversion_rate_outbound", "click_through_rate", "organic_view_to_lead_conversion_rate",
+                                      "lead_to_customer_conversion_rate_organic", "cost_to_sell_percentage", 
+                                      "debt_interest_rate", "transaction_fees"]:
+                                # Format as percentage
+                                fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {param_name}",
+                                            labels={"Value": f"{param_name} (%)"})
+                                # Convert to percentage for display
+                                fig.update_layout(yaxis_tickformat='.2%')
+                            else:
+                                fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {param_name}")
+                            
+                            st.plotly_chart(fig)
+                        else:
+                            st.warning("Plotly visualization unavailable. Please install plotly package.")
+                            st.dataframe(df_chart)
+                            
