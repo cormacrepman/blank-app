@@ -105,7 +105,17 @@ with tab_input:
             meetings_held = st.number_input("Number of meetings held", min_value=0, value=30)
             follow_ups_per_lead = st.number_input("Number of follow-ups per lead", min_value=0, value=3)
             sales_cycle_length = st.number_input("Sales cycle length (days)", min_value=0, value=30)
-        
+            funnel_conversion_rate = st.number_input("Funnel conversion rate (%)", min_value=0.0, max_value=100.0, value=15.0) / 100
+            lead_to_customer_conversion_rate_inbound = st.number_input("Lead to customer conversion rate inbound (%)", min_value=0.0, max_value=100.0, value=10.0) / 100
+            organic_view_to_lead_conversion_rate = st.number_input("Organic view to lead conversion rate (%)", min_value=0.0, max_value=100.0, value=2.0) / 100
+            lead_to_customer_conversion_rate_organic = st.number_input("Lead to customer conversion rate organic (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
+            conversion_rate_outbound = st.number_input("Conversion rate outbound (%)", min_value=0.0, max_value=100.0, value=3.0) / 100
+            click_through_rate = st.number_input("Click through rate (%)", min_value=0.0, max_value=100.0, value=2.5) / 100
+            organic_views_per_month = st.number_input("Organic views per month", min_value=0, value=5000)
+            number_of_sdrs = st.number_input("Number of SDRs", min_value=0, value=2)
+            contact_per_month_per_sdr = st.number_input("Number of contacts per month per SDR", min_value=0, value=200)
+            average_deals_per_sales_rep_per_month = st.number_input("Average deals per sales rep per month", min_value=0.0, value=5.0)
+            
         with col2:
             st.subheader("Financial & Customer Metrics")
             cogs = st.number_input("Cost of goods sold (COGS)", min_value=0.0, value=5000.0)
@@ -116,6 +126,25 @@ with tab_input:
             operating_expenses = st.number_input("Total operating expenses", min_value=0.0, value=10000.0)
             sales_team_salary = st.number_input("Total sales team salary", min_value=0.0, value=20000.0)
             sales_commission_rate = st.number_input("Sales commission rate (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
+            price_of_offer = st.number_input("Price of offer", min_value=0.0, value=500.0)
+            price_of_renewal = st.number_input("Price of renewal", min_value=0.0, value=450.0)
+            rate_of_renewals = st.number_input("Rate of renewals (%)", min_value=0.0, max_value=100.0, value=70.0) / 100
+            fixed_costs_per_month = st.number_input("Fixed costs per month", min_value=0.0, value=15000.0)
+            cost_per_thousand_impressions = st.number_input("Cost per thousand impressions (CPM)", min_value=0.0, value=25.0)
+            outbound_salary = st.number_input("Outbound salary", min_value=0.0, value=4000.0)
+            cost_to_sell_percentage = st.number_input("Cost to sell (%)", min_value=0.0, max_value=100.0, value=15.0) / 100
+            time_to_sell_days = st.number_input("Time to sell (days)", min_value=0, value=45)
+            cost_to_fulfil = st.number_input("Cost to fulfil", min_value=0.0, value=200.0)
+            time_to_collect = st.number_input("Time to collect (days)", min_value=0, value=30)
+            refund_period = st.number_input("Refund period (days)", min_value=0, value=14)
+            total_addressable_market = st.number_input("Total addressable market", min_value=0, value=100000)
+            initial_number_of_customers = st.number_input("Initial number of customers", min_value=0, value=100)
+            cash_in_the_bank = st.number_input("Cash in the bank", min_value=0.0, value=50000.0)
+            assets = st.number_input("Assets", min_value=0.0, value=75000.0)
+            liabilities = st.number_input("Liabilities", min_value=0.0, value=25000.0)
+            debt = st.number_input("Debt", min_value=0.0, value=10000.0)
+            debt_interest_rate = st.number_input("Debt interest rate (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
+            transaction_fees = st.number_input("Transaction fees (%)", min_value=0.0, max_value=100.0, value=2.5) / 100
         
         st.subheader("Additional Factors")
         col3, col4 = st.columns(2)
@@ -123,6 +152,10 @@ with tab_input:
         with col3:
             marketing_spend = st.number_input("Total marketing spend", min_value=0.0, value=5000.0)
             product_dev_cost = st.number_input("Product development cost", min_value=0.0, value=10000.0)
+            media_spend = st.number_input("Media spend", min_value=0.0, value=3000.0)
+            time_to_market_inbound = st.number_input("Time to market inbound (days)", min_value=0, value=60)
+            time_to_market_organic = st.number_input("Time to market organic (days)", min_value=0, value=90)
+            time_to_market_outbound = st.number_input("Time to market outbound (days)", min_value=0, value=45)
         
         with col4:
             discount_rate = st.number_input("Average discount rate (%)", min_value=0.0, max_value=100.0, value=10.0) / 100
@@ -156,7 +189,40 @@ with tab_input:
             "product_dev_cost": product_dev_cost,
             "discount_rate": discount_rate,
             "refund_rate": refund_rate,
-            "seasonality_adjustment": seasonality_adjustment
+            "seasonality_adjustment": seasonality_adjustment,
+            "price_of_offer": price_of_offer,
+            "price_of_renewal": price_of_renewal,
+            "rate_of_renewals": rate_of_renewals,
+            "media_spend": media_spend,
+            "funnel_conversion_rate": funnel_conversion_rate,
+            "lead_to_customer_conversion_rate_inbound": lead_to_customer_conversion_rate_inbound,
+            "fixed_costs_per_month": fixed_costs_per_month,
+            "cost_per_thousand_impressions": cost_per_thousand_impressions,
+            "conversion_rate_outbound": conversion_rate_outbound,
+            "click_through_rate": click_through_rate,
+            "time_to_market_inbound": time_to_market_inbound,
+            "organic_views_per_month": organic_views_per_month,
+            "organic_view_to_lead_conversion_rate": organic_view_to_lead_conversion_rate,
+            "lead_to_customer_conversion_rate_organic": lead_to_customer_conversion_rate_organic,
+            "time_to_market_organic": time_to_market_organic,
+            "time_to_market_outbound": time_to_market_outbound,
+            "outbound_salary": outbound_salary,
+            "number_of_sdrs": number_of_sdrs,
+            "contact_per_month_per_sdr": contact_per_month_per_sdr,
+            "average_deals_per_sales_rep_per_month": average_deals_per_sales_rep_per_month,
+            "cost_to_sell_percentage": cost_to_sell_percentage,
+            "time_to_sell_days": time_to_sell_days,
+            "cost_to_fulfil": cost_to_fulfil,
+            "time_to_collect": time_to_collect,
+            "refund_period": refund_period,
+            "total_addressable_market": total_addressable_market,
+            "initial_number_of_customers": initial_number_of_customers,
+            "cash_in_the_bank": cash_in_the_bank,
+            "assets": assets,
+            "liabilities": liabilities,
+            "debt": debt,
+            "debt_interest_rate": debt_interest_rate,
+            "transaction_fees": transaction_fees
         }
         
         # Calculate metrics
@@ -382,7 +448,40 @@ with tab_compare:
                     "product_dev_cost": "Product Development Cost",
                     "discount_rate": "Discount Rate",
                     "refund_rate": "Refund Rate",
-                    "seasonality_adjustment": "Seasonality Adjustment"
+                    "seasonality_adjustment": "Seasonality Adjustment",
+                    "price_of_offer": "Price of Offer",
+                    "price_of_renewal": "Price of Renewal",
+                    "rate_of_renewals": "Rate of Renewals",
+                    "media_spend": "Media Spend",
+                    "funnel_conversion_rate": "Funnel Conversion Rate",
+                    "lead_to_customer_conversion_rate_inbound": "Lead to Customer Conversion Rate Inbound",
+                    "fixed_costs_per_month": "Fixed Costs Per Month",
+                    "cost_per_thousand_impressions": "Cost Per Thousand Impressions (CPM)",
+                    "conversion_rate_outbound": "Conversion Rate Outbound",
+                    "click_through_rate": "Click Through Rate",
+                    "time_to_market_inbound": "Time to Market Inbound",
+                    "organic_views_per_month": "Organic Views Per Month",
+                    "organic_view_to_lead_conversion_rate": "Organic View to Lead Conversion Rate",
+                    "lead_to_customer_conversion_rate_organic": "Lead to Customer Conversion Rate Organic",
+                    "time_to_market_organic": "Time to Market Organic",
+                    "time_to_market_outbound": "Time to Market Outbound",
+                    "outbound_salary": "Outbound Salary",
+                    "number_of_sdrs": "Number of SDRs",
+                    "contact_per_month_per_sdr": "Contact Per Month Per SDR",
+                    "average_deals_per_sales_rep_per_month": "Average Deals Per Sales Rep Per Month",
+                    "cost_to_sell_percentage": "Cost to Sell %",
+                    "time_to_sell_days": "Time to Sell Days",
+                    "cost_to_fulfil": "Cost to Fulfil",
+                    "time_to_collect": "Time to Collect",
+                    "refund_period": "Refund Period",
+                    "total_addressable_market": "Total Addressable Market",
+                    "initial_number_of_customers": "Initial Number of Customers",
+                    "cash_in_the_bank": "Cash in the Bank",
+                    "assets": "Assets",
+                    "liabilities": "Liabilities",
+                    "debt": "Debt",
+                    "debt_interest_rate": "Debt Interest Rate",
+                    "transaction_fees": "Transaction Fees"
                 }
                 
                 selected_params = st.multiselect(
@@ -402,131 +501,12 @@ with tab_compare:
                         
                         for param in selected_params:
                             if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
-                                        "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment"]:
+                                        "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
+                                        "rate_of_renewals", "funnel_conversion_rate", "lead_to_customer_conversion_rate_inbound",
+                                        "conversion_rate_outbound", "click_through_rate", "organic_view_to_lead_conversion_rate",
+                                        "lead_to_customer_conversion_rate_organic", "cost_to_sell_percentage", 
+                                        "debt_interest_rate", "transaction_fees"]:
                                 # Format as percentage
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
                             else:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                        
-                        input_comparison_data.append(row)
-                    
-                    df_input_comparison = pd.DataFrame(input_comparison_data)
-                    
-                    # Display input comparison table
-                    st.dataframe(df_input_comparison)
-                    
-                    # Visualize input comparisons
-                    for param in selected_params:
-                        # Create a bar chart for each selected parameter
-                        param_name = param_options.get(param, param)
-                        
-                        chart_data = {
-                            'Simulation': [st.session_state.simulations[sim_id]['name'] for sim_id in selected_sims],
-                            'Value': [st.session_state.simulations[sim_id]['data']['inputs'][param] for sim_id in selected_sims]
-                        }
-                        
-                        df_chart = pd.DataFrame(chart_data)
-                        
-                        if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
-                                  "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment"]:
-                            # Format as percentage
-                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {param_name}",
-                                        labels={"Value": f"{param_name} (%)"})
-                            # Convert to percentage for display
-                            fig.update_layout(yaxis_tickformat='.2%')
-                        else:
-                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {param_name}")
-                        
-                        st.plotly_chart(fig)
-
-# Download data tab
-with tab_download:
-    if len(st.session_state.simulations) == 0:
-        st.warning("No simulations have been run. Please run at least one simulation in the 'Run Simulation' tab.")
-    else:
-        st.subheader("Download Simulation Data")
-        
-        # Select simulation to download
-        sim_options = list(st.session_state.simulations.keys())
-        
-        selected_sim = st.selectbox(
-            "Select simulation to download",
-            options=sim_options,
-            format_func=lambda x: f"{x}: {st.session_state.simulations[x]['name']}"
-        )
-        
-        if selected_sim:
-            sim = st.session_state.simulations[selected_sim]
-            
-            st.write(f"### Download options for: {sim['name']}")
-            
-            # Create dataframes for different aspects of the simulation
-            
-            # 1. Input parameters
-            input_data = sim['data']['inputs']
-            df_inputs = pd.DataFrame([input_data])
-            
-            # 2. Output metrics
-            output_data = {k: v for k, v in sim['data'].items() if k != 'inputs'}
-            df_outputs = pd.DataFrame([output_data])
-            
-            # 3. All combined
-            combined_data = {**input_data, **output_data}
-            df_combined = pd.DataFrame([combined_data])
-            
-            # Download links
-            st.markdown(get_download_link(df_inputs, f"{sim['name']}_inputs.csv", "Input Parameters (CSV)"), unsafe_allow_html=True)
-            st.markdown(get_download_link(df_outputs, f"{sim['name']}_outputs.csv", "Output Metrics (CSV)"), unsafe_allow_html=True)
-            st.markdown(get_download_link(df_combined, f"{sim['name']}_combined.csv", "All Data (CSV)"), unsafe_allow_html=True)
-            st.markdown(get_json_download_link(sim['data'], f"{sim['name']}_full.json", "Full Simulation Data (JSON)"), unsafe_allow_html=True)
-            
-            # Option to download all simulations
-            st.write("### Download All Simulations")
-            
-            # Create a combined dataframe of all simulations
-            all_sims_data = []
-            
-            for sim_id, sim_data in st.session_state.simulations.items():
-                row = {
-                    "Simulation ID": sim_id,
-                    "Simulation Name": sim_data["name"],
-                    "Timestamp": sim_data["timestamp"]
-                }
-                
-                # Add input parameters
-                for param, value in sim_data["data"]["inputs"].items():
-                    row[f"Input: {param}"] = value
-                
-                # Add output metrics
-                for metric, value in {k: v for k, v in sim_data["data"].items() if k != 'inputs'}.items():
-                    row[f"Output: {metric}"] = value
-                
-                all_sims_data.append(row)
-            
-            df_all_sims = pd.DataFrame(all_sims_data)
-            
-            st.markdown(get_download_link(df_all_sims, "all_simulations.csv", "All Simulations (CSV)"), unsafe_allow_html=True)
-            st.markdown(get_json_download_link(st.session_state.simulations, "all_simulations.json", "All Simulations (JSON)"), unsafe_allow_html=True)
-
-# Add a sidebar with information
-with st.sidebar:
-    st.header("Simulation History")
-    
-    if len(st.session_state.simulations) == 0:
-        st.info("No simulations have been run yet.")
-    else:
-        for sim_id, sim in st.session_state.simulations.items():
-            st.write(f"**{sim_id}**: {sim['name']}")
-            st.write(f"*Run at: {sim['timestamp']}*")
-            
-            # Show key metrics
-            st.write(f"Revenue: £{sim['data']['revenue_generated']:,.2f}")
-            st.write(f"Net Profit: £{sim['data']['net_profit']:,.2f}")
-            st.write(f"ROI: {sim['data']['roi']:.2f}%")
-            st.write("---")
-    
-    # Clear all simulations button
-    if st.button("Clear All Simulations"):
-        st.session_state.simulations = {}
-        st.session_state.sim_counter = 0
-        st.experimental_rerun()
