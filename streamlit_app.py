@@ -33,10 +33,7 @@ tab_input, tab_compare, tab_download = st.tabs(["Run Simulation", "Compare Simul
 
 # Function to calculate metrics based on inputs
 def calculate_metrics(inputs):
-    # Extract all inputs from the dictionary
-    # We use the dictionary directly rather than unpacking into locals
-    
-    # Calculate derived metrics
+    # Calculate derived metrics using dictionary access instead of local variables
     customer_retention_rate = 1 - inputs.get('churn_rate', 0)
     opportunities = inputs.get('leads_generated', 0) * inputs.get('lead_conversion_rate', 0)
     customers = opportunities * inputs.get('opportunity_conversion_rate', 0)
@@ -103,68 +100,84 @@ with tab_input:
         # Optional simulation name
         sim_name = st.text_input("Simulation Name (optional)", value=f"Simulation {st.session_state.sim_counter + 1}")
         
+        # Create two columns
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("Lead and Conversion Metrics")
-            leads_generated = st.number_input("Number of leads generated", min_value=0.0, value=100.0)
-            lead_conversion_rate = st.number_input("Lead conversion rate (%)", min_value=0.0, max_value=100.0, value=20.0) / 100
-            opportunity_conversion_rate = st.number_input("Opportunity conversion rate (%)", min_value=0.0, max_value=100.0, value=30.0) / 100
-            average_deal_size = st.number_input("Average deal size (revenue per deal)", min_value=0.0, value=1000.0)
-            cost_per_lead = st.number_input("Cost per lead", min_value=0.0, value=10.0)
-            cost_per_meeting = st.number_input("Cost per meeting", min_value=0.0, value=50.0)
-            meetings_held = st.number_input("Number of meetings held", min_value=0, value=30)
-            follow_ups_per_lead = st.number_input("Number of follow-ups per lead", min_value=0, value=3)
-            sales_cycle_length = st.number_input("Sales cycle length (days)", min_value=0, value=30)
-            funnel_conversion_rate = st.number_input("Funnel conversion rate (%)", min_value=0.0, max_value=100.0, value=15.0) / 100
-            lead_to_customer_conversion_rate_inbound = st.number_input("Lead to customer conversion rate inbound (%)", min_value=0.0, max_value=100.0, value=10.0) / 100
-            organic_view_to_lead_conversion_rate = st.number_input("Organic view to lead conversion rate (%)", min_value=0.0, max_value=100.0, value=2.0) / 100
-            lead_to_customer_conversion_rate_organic = st.number_input("Lead to customer conversion rate organic (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
-            conversion_rate_outbound = st.number_input("Conversion rate outbound (%)", min_value=0.0, max_value=100.0, value=3.0) / 100
-            click_through_rate = st.number_input("Click through rate (%)", min_value=0.0, max_value=100.0, value=2.5) / 100
-            organic_views_per_month = st.number_input("Organic views per month", min_value=0, value=5000)
-            number_of_sdrs = st.number_input("Number of SDRs", min_value=0, value=2)
-            contact_per_month_per_sdr = st.number_input("Number of contacts per month per SDR", min_value=0, value=200)
-            average_deals_per_sales_rep_per_month = st.number_input("Average deals per sales rep per month", min_value=0.0, value=5.0)
+            st.markdown("### Sales Metrics")
+            average_deal_size = st.number_input("Average deal size (revenue per deal)", min_value=0.0, value=1000.0, key="average_deal_size")
+            leads_generated = st.number_input("Number of leads generated", min_value=0.0, value=100.0, key="leads_generated")
+            lead_conversion_rate = st.number_input("Lead conversion rate (%)", min_value=0.0, max_value=100.0, value=20.0, key="lead_conversion_rate") / 100
+            opportunity_conversion_rate = st.number_input("Opportunity conversion rate (%)", min_value=0.0, max_value=100.0, value=30.0, key="opportunity_conversion_rate") / 100
+            meetings_held = st.number_input("Number of meetings held", min_value=0, value=30, key="meetings_held")
+            follow_ups_per_lead = st.number_input("Number of follow-ups per lead", min_value=0, value=3, key="follow_ups_per_lead")
+            sales_cycle_length = st.number_input("Sales cycle length (days)", min_value=0, value=30, key="sales_cycle_length")
+            price_of_offer = st.number_input("Price of offer", min_value=0.0, value=500.0, key="price_of_offer")
+            number_of_sdrs = st.number_input("Number of SDRs", min_value=0, value=2, key="number_of_sdrs")
+            contact_per_month_per_sdr = st.number_input("Number of contacts per month per SDR", min_value=0, value=200, key="contact_per_month_per_sdr")
+            average_deals_per_sales_rep_per_month = st.number_input("Average deals per sales rep per month", min_value=0.0, value=5.0, key="average_deals_per_sales_rep_per_month")
+            cost_to_sell_percentage = st.number_input("Cost to sell (%)", min_value=0.0, max_value=100.0, value=15.0, key="cost_to_sell_percentage") / 100
+            time_to_sell_days = st.number_input("Time to sell (days)", min_value=0, value=45, key="time_to_sell_days")
+            outbound_salary = st.number_input("Outbound salary", min_value=0.0, value=4000.0, key="outbound_salary")
+            sales_team_salary = st.number_input("Total sales team salary", min_value=0.0, value=20000.0, key="sales_team_salary")
+            sales_commission_rate = st.number_input("Sales commission rate (%)", min_value=0.0, max_value=100.0, value=5.0, key="sales_commission_rate") / 100
+            time_to_market_inbound = st.number_input("Time to market inbound (days)", min_value=0, value=60, key="time_to_market_inbound")
+            time_to_market_organic = st.number_input("Time to market organic (days)", min_value=0, value=90, key="time_to_market_organic")
+            time_to_market_outbound = st.number_input("Time to market outbound (days)", min_value=0, value=45, key="time_to_market_outbound")
             
-        with col2:
-            st.subheader("Financial & Customer Metrics")
-            cogs = st.number_input("Cost of goods sold (COGS)", min_value=0.0, value=5000.0)
-            customer_acquisition_cost = st.number_input("Customer acquisition cost (CAC)", min_value=0.0, value=200.0)
-            contract_length = st.number_input("Average contract length (months)", min_value=0, value=12)
-            avg_customer_lifetime_value = st.number_input("Average customer lifetime value (CLTV)", min_value=0.0, value=5000.0)
-            churn_rate = st.number_input("Churn rate (%)", min_value=0.0, max_value=100.0, value=10.0) / 100
-            operating_expenses = st.number_input("Total operating expenses", min_value=0.0, value=10000.0)
-            sales_team_salary = st.number_input("Total sales team salary", min_value=0.0, value=20000.0)
-            sales_commission_rate = st.number_input("Sales commission rate (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
-            price_of_offer = st.number_input("Price of offer", min_value=0.0, value=500.0)
-            price_of_renewal = st.number_input("Price of renewal", min_value=0.0, value=450.0)
-            rate_of_renewals = st.number_input("Rate of renewals (%)", min_value=0.0, max_value=100.0, value=70.0) / 100
-            fixed_costs_per_month = st.number_input("Fixed costs per month", min_value=0.0, value=15000.0)
-            cost_per_thousand_impressions = st.number_input("Cost per thousand impressions (CPM)", min_value=0.0, value=25.0)
-            outbound_salary = st.number_input("Outbound salary", min_value=0.0, value=4000.0)
-            cost_to_sell_percentage = st.number_input("Cost to sell (%)", min_value=0.0, max_value=100.0, value=15.0) / 100
-            time_to_sell_days = st.number_input("Time to sell (days)", min_value=0, value=45)
-            cost_to_fulfil = st.number_input("Cost to fulfil", min_value=0.0, value=200.0)
-            time_to_collect = st.number_input("Time to collect (days)", min_value=0, value=30)
-            refund_period = st.number_input("Refund period (days)", min_value=0, value=14)
-            total_addressable_market = st.number_input("Total addressable market", min_value=0, value=100000)
-            initial_number_of_customers = st.number_input("Initial number of customers", min_value=0, value=100)
-            cash_in_the_bank = st.number_input("Cash in the bank", min_value=0.0, value=50000.0)
-            assets = st.number_input("Assets", min_value=0.0, value=75000.0)
-            liabilities = st.number_input("Liabilities", min_value=0.0, value=25000.0)
-            debt = st.number_input("Debt", min_value=0.0, value=10000.0)
-            debt_interest_rate = st.number_input("Debt interest rate (%)", min_value=0.0, max_value=100.0, value=5.0) / 100
-            transaction_fees = st.number_input("Transaction fees (%)", min_value=0.0, max_value=100.0, value=2.5) / 100
+            st.markdown("### Marketing Metrics")
+            cost_per_lead = st.number_input("Cost per lead", min_value=0.0, value=10.0, key="cost_per_lead")
+            cost_per_meeting = st.number_input("Cost per meeting", min_value=0.0, value=50.0, key="cost_per_meeting")
+            funnel_conversion_rate = st.number_input("Funnel conversion rate (%)", min_value=0.0, max_value=100.0, value=15.0, key="funnel_conversion_rate") / 100
+            conversion_rate_outbound = st.number_input("Conversion rate outbound (%)", min_value=0.0, max_value=100.0, value=3.0, key="conversion_rate_outbound") / 100
+            click_through_rate = st.number_input("Click through rate (%)", min_value=0.0, max_value=100.0, value=2.5, key="click_through_rate") / 100
+            lead_to_customer_conversion_rate_inbound = st.number_input("Lead to customer conversion rate inbound (%)", min_value=0.0, max_value=100.0, value=10.0, key="lead_to_customer_conversion_rate_inbound") / 100
+            organic_views_per_month = st.number_input("Organic views per month", min_value=0, value=5000, key="organic_views_per_month")
+            organic_view_to_lead_conversion_rate = st.number_input("Organic view to lead conversion rate (%)", min_value=0.0, max_value=100.0, value=2.0, key="organic_view_to_lead_conversion_rate") / 100
+            lead_to_customer_conversion_rate_organic = st.number_input("Lead to customer conversion rate organic (%)", min_value=0.0, max_value=100.0, value=5.0, key="lead_to_customer_conversion_rate_organic") / 100
+            cost_per_thousand_impressions = st.number_input("Cost per thousand impressions (CPM)", min_value=0.0, value=25.0, key="cost_per_thousand_impressions")
+            marketing_spend = st.number_input("Total marketing spend", min_value=0.0, value=5000.0, key="marketing_spend")
+            media_spend = st.number_input("Media spend", min_value=0.0, value=3000.0, key="media_spend")
         
-        st.subheader("Additional Factors")
+        with col2:
+            st.markdown("### Offer Metrics")
+            churn_rate = st.number_input("Churn rate (%)", min_value=0.0, max_value=100.0, value=10.0, key="churn_rate") / 100
+            contract_length = st.number_input("Average contract length (months)", min_value=0, value=12, key="contract_length")
+            discount_rate = st.number_input("Average discount rate (%)", min_value=0.0, max_value=100.0, value=10.0, key="discount_rate") / 100
+            refund_rate = st.number_input("Refund rate (%)", min_value=0.0, max_value=100.0, value=5.0, key="refund_rate") / 100
+            refund_period = st.number_input("Refund period (days)", min_value=0, value=14, key="refund_period")
+            customer_acquisition_cost = st.number_input("Customer acquisition cost (CAC)", min_value=0.0, value=200.0, key="customer_acquisition_cost")
+            avg_customer_lifetime_value = st.number_input("Average customer lifetime value (CLTV)", min_value=0.0, value=5000.0, key="avg_customer_lifetime_value")
+            price_of_renewal = st.number_input("Price of renewal", min_value=0.0, value=450.0, key="price_of_renewal")
+            rate_of_renewals = st.number_input("Rate of renewals (%)", min_value=0.0, max_value=100.0, value=70.0, key="rate_of_renewals") / 100
+            transaction_fees = st.number_input("Transaction fees (%)", min_value=0.0, max_value=100.0, value=2.5, key="transaction_fees") / 100
+            seasonality_adjustment = st.number_input("Seasonality adjustment (% change in sales)", min_value=-100.0, max_value=100.0, value=10.0, key="seasonality_adjustment") / 100
+            
+            st.markdown("### Operations Metrics")
+            cogs = st.number_input("Cost of goods sold (COGS)", min_value=0.0, value=5000.0, key="cogs")
+            operating_expenses = st.number_input("Total operating expenses", min_value=0.0, value=10000.0, key="operating_expenses")
+            fixed_costs_per_month = st.number_input("Fixed costs per month", min_value=0.0, value=15000.0, key="fixed_costs_per_month")
+            product_dev_cost = st.number_input("Product development cost", min_value=0.0, value=10000.0, key="product_dev_cost")
+            cost_to_fulfil = st.number_input("Cost to fulfil", min_value=0.0, value=200.0, key="cost_to_fulfil")
+            time_to_collect = st.number_input("Time to collect (days)", min_value=0, value=30, key="time_to_collect")
+            
+            st.markdown("### Cash Metrics")
+            total_addressable_market = st.number_input("Total addressable market", min_value=0, value=100000, key="total_addressable_market")
+            initial_number_of_customers = st.number_input("Initial number of customers", min_value=0, value=100, key="initial_number_of_customers")
+            cash_in_the_bank = st.number_input("Cash in the bank", min_value=0.0, value=50000.0, key="cash_in_the_bank")
+            assets = st.number_input("Assets", min_value=0.0, value=75000.0, key="assets")
+            liabilities = st.number_input("Liabilities", min_value=0.0, value=25000.0, key="liabilities")
+            debt = st.number_input("Debt", min_value=0.0, value=10000.0, key="debt")
+            debt_interest_rate = st.number_input("Debt interest rate (%)", min_value=0.0, max_value=100.0, value=5.0, key="debt_interest_rate") / 100
+        
+        st.markdown("### Additional Notes")
         col3, col4 = st.columns(2)
         
         with col3:
-            st.write("No additional inputs needed in this section.")
+            st.info("All metrics have been categorized in the main sections above.")
         
         with col4:
-            st.write("All metrics have been categorized in the main sections.")
+            st.info("Click 'Run Simulation' to calculate and visualize results.")
         
         submitted = st.form_submit_button("Run Simulation")
 
@@ -189,9 +202,9 @@ with tab_input:
             "outbound_salary": outbound_salary,
             "sales_team_salary": sales_team_salary,
             "sales_commission_rate": sales_commission_rate,
-            "time_to_market_inbound": sales_time_to_market_inbound,
-            "time_to_market_organic": sales_time_to_market_organic,
-            "time_to_market_outbound": sales_time_to_market_outbound,
+            "time_to_market_inbound": time_to_market_inbound,
+            "time_to_market_organic": time_to_market_organic,
+            "time_to_market_outbound": time_to_market_outbound,
             
             # Marketing Metrics
             "cost_per_lead": cost_per_lead,
@@ -204,27 +217,27 @@ with tab_input:
             "organic_view_to_lead_conversion_rate": organic_view_to_lead_conversion_rate,
             "lead_to_customer_conversion_rate_organic": lead_to_customer_conversion_rate_organic,
             "cost_per_thousand_impressions": cost_per_thousand_impressions,
-            "marketing_spend": marketing_spend_input,
-            "media_spend": media_spend_input,
+            "marketing_spend": marketing_spend,
+            "media_spend": media_spend,
             
             # Offer Metrics
             "churn_rate": churn_rate,
             "contract_length": contract_length,
-            "discount_rate": discount_rate_input,
-            "refund_rate": refund_rate_input,
+            "discount_rate": discount_rate,
+            "refund_rate": refund_rate,
             "refund_period": refund_period,
             "customer_acquisition_cost": customer_acquisition_cost,
             "avg_customer_lifetime_value": avg_customer_lifetime_value,
             "price_of_renewal": price_of_renewal,
             "rate_of_renewals": rate_of_renewals,
             "transaction_fees": transaction_fees,
-            "seasonality_adjustment": seasonality_adjustment_input,
+            "seasonality_adjustment": seasonality_adjustment,
             
             # Operations Metrics
             "cogs": cogs,
             "operating_expenses": operating_expenses,
             "fixed_costs_per_month": fixed_costs_per_month,
-            "product_dev_cost": product_dev_cost_input,
+            "product_dev_cost": product_dev_cost,
             "cost_to_fulfil": cost_to_fulfil,
             "time_to_collect": time_to_collect,
             
@@ -316,8 +329,13 @@ with tab_input:
         }
         
         df_revenue = pd.DataFrame(revenue_data)
-        fig_revenue = px.bar(df_revenue, x='Category', y='Amount', title='Revenue Breakdown')
-        st.plotly_chart(fig_revenue)
+        
+        try:
+            fig_revenue = px.bar(df_revenue, x='Category', y='Amount', title='Revenue Breakdown')
+            st.plotly_chart(fig_revenue)
+        except NameError:
+            st.warning("Plotly visualization unavailable. Please install plotly package.")
+            st.dataframe(df_revenue)
         
         # Profit waterfall
         profit_data = {
@@ -335,10 +353,15 @@ with tab_input:
         }
         
         df_profit = pd.DataFrame(profit_data)
-        fig_profit = px.bar(df_profit, x='Stage', y='Value', color='Type', 
-                            title='Profit Waterfall', 
-                            color_discrete_map={'Revenue': 'green', 'Cost': 'red', 'Profit': 'blue'})
-        st.plotly_chart(fig_profit)
+        
+        try:
+            fig_profit = px.bar(df_profit, x='Stage', y='Value', color='Type', 
+                                title='Profit Waterfall', 
+                                color_discrete_map={'Revenue': 'green', 'Cost': 'red', 'Profit': 'blue'})
+            st.plotly_chart(fig_profit)
+        except NameError:
+            st.warning("Plotly visualization unavailable. Please install plotly package.")
+            st.dataframe(df_profit)
 
 # Comparison tab
 with tab_compare:
@@ -421,22 +444,26 @@ with tab_compare:
                     
                     df_chart = pd.DataFrame(chart_data)
                     
-                    if metric in ["profit_margin", "cltv_cac_ratio"]:
-                        # Format as percentage
-                        fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}",
-                                    labels={"Value": f"{metric_name} (%)"})
-                        # Convert to percentage for display
-                        fig.update_layout(yaxis_tickformat='.2%')
-                    else:
-                        fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}")
-                        if metric in ["revenue_generated", "gross_profit", "operating_profit", "net_profit", 
-                                    "break_even_point", "total_cost_leads", "total_cost_meetings", 
-                                    "total_sales_team_commission", "total_marketing_spend", 
-                                    "seasonality_adjusted_revenue"]:
-                            # Add pound symbol
-                            fig.update_layout(yaxis_title=f"{metric_name} (£)")
-                    
-                    st.plotly_chart(fig)
+                    try:
+                        if metric in ["profit_margin", "cltv_cac_ratio"]:
+                            # Format as percentage
+                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}",
+                                        labels={"Value": f"{metric_name} (%)"})
+                            # Convert to percentage for display
+                            fig.update_layout(yaxis_tickformat='.2%')
+                        else:
+                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}")
+                            if metric in ["revenue_generated", "gross_profit", "operating_profit", "net_profit", 
+                                        "break_even_point", "total_cost_leads", "total_cost_meetings", 
+                                        "total_sales_team_commission", "total_marketing_spend", 
+                                        "seasonality_adjusted_revenue"]:
+                                # Add pound symbol
+                                fig.update_layout(yaxis_title=f"{metric_name} (£)")
+                        
+                        st.plotly_chart(fig)
+                    except NameError:
+                        st.warning("Plotly visualization unavailable. Please install plotly package.")
+                        st.dataframe(df_chart)
                 
                 # Input parameter comparison
                 st.subheader("Input Parameter Comparison")
@@ -495,32 +522,3 @@ with tab_compare:
                     "debt": "Debt",
                     "debt_interest_rate": "Debt Interest Rate",
                     "transaction_fees": "Transaction Fees"
-                }
-                
-                selected_params = st.multiselect(
-                    "Select input parameters to compare",
-                    options=input_params,
-                    default=[],
-                    format_func=lambda x: param_options.get(x, x)
-                )
-                
-                if selected_params:
-                    # Create input comparison dataframe
-                    input_comparison_data = []
-                    
-                    for sim_id in selected_sims:
-                        sim = st.session_state.simulations[sim_id]
-                        row = {"Simulation": sim["name"]}
-                        
-                        for param in selected_params:
-                            if param in ["lead_conversion_rate", "opportunity_conversion_rate", "churn_rate", 
-                                        "sales_commission_rate", "discount_rate", "refund_rate", "seasonality_adjustment",
-                                        "rate_of_renewals", "funnel_conversion_rate", "lead_to_customer_conversion_rate_inbound",
-                                        "conversion_rate_outbound", "click_through_rate", "organic_view_to_lead_conversion_rate",
-                                        "lead_to_customer_conversion_rate_organic", "cost_to_sell_percentage", 
-                                        "debt_interest_rate", "transaction_fees"]:
-                                # Format as percentage
-                                row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                            else:
-                                row[param_options.get(param, param)] = sim["data"]["inputs"][param]
-                                
