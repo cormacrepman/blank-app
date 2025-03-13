@@ -801,3 +801,4 @@ with tab_compare:
                     default=[],
                     format_func=lambda x: param_options.get(x, x)
                 )
+                
