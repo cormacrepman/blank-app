@@ -675,4 +675,5 @@ with tab_compare:
                     options=input_params,
                     default=[],
                     format_func=lambda x: param_options.get(x, x)
-                )'
+                )''
+                '
