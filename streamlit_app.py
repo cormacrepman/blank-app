@@ -510,3 +510,4 @@ with tab_compare:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
                             else:
                                 row[param_options.get(param, param)] = sim["data"]["inputs"][param]
+                            
