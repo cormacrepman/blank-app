@@ -71,7 +71,6 @@ with tab_download:
                 st.markdown(get_csv_download_link(df_combined, f"{sim['name']}_combined.csv", "Download All Data (CSV)"), unsafe_allow_html=True)
                 
                 # JSON download option
-                json_str = json.dumps(sim['data'], indent=4)
                 st.markdown(get_json_download_link(sim['data'], f"{sim['name']}_full.json", "Download Full Simulation Data (JSON)"), unsafe_allow_html=True)
                 
                 # Show all simulations download
@@ -122,7 +121,174 @@ with tab_download:
                         st.markdown(pdf_display, unsafe_allow_html=True)
                 else:
                     st.warning("PDF report generation requires ReportLab. Install with: pip install reportlab")
-                    st.code("pip install reportlab", language="bash")
+                    st.code("pip install reportlab", language="bash")# Tab 2: Compare Simulations
+with tab_compare:
+    if len(st.session_state.simulations) == 0:
+        st.warning("No simulations have been run. Please run at least one simulation in the 'Run Simulation' tab.")
+    else:
+        st.subheader("Compare Simulations")
+        
+        # Select simulations to compare
+        sim_options = list(st.session_state.simulations.keys())
+        sim_names = [st.session_state.simulations[sim]['name'] for sim in sim_options]
+        
+        selected_sims = st.multiselect(
+            "Select simulations to compare",
+            options=sim_options,
+            default=sim_options,
+            format_func=lambda x: f"{x}: {st.session_state.simulations[x]['name']}"
+        )
+        
+        if selected_sims:
+            # Choose metrics to compare
+            metric_options = {
+                "revenue_generated": "Revenue Generated",
+                "gross_profit": "Gross Profit",
+                "operating_profit": "Operating Profit",
+                "net_profit": "Net Profit",
+                "profit_margin": "Profit Margin",
+                "roi": "ROI",
+                "opportunities": "Opportunities",
+                "customers": "Customers",
+                "cltv_cac_ratio": "CLTV/CAC Ratio",
+                "break_even_point": "Break-even Point",
+                "total_cost_leads": "Total Cost of Leads",
+                "total_cost_meetings": "Total Cost of Meetings",
+                "total_sales_team_commission": "Total Sales Commission",
+                "total_marketing_spend": "Total Marketing Spend",
+                "seasonality_adjusted_revenue": "Seasonality Adjusted Revenue"
+            }
+            
+            selected_metrics = st.multiselect(
+                "Select metrics to compare",
+                options=list(metric_options.keys()),
+                default=["revenue_generated", "net_profit", "roi", "customers"],
+                format_func=lambda x: metric_options[x]
+            )
+            
+            if selected_metrics:
+                # Create comparison dataframe
+                comparison_data = []
+                
+                for sim_id in selected_sims:
+                    sim = st.session_state.simulations[sim_id]
+                    row = {"Simulation": sim["name"]}
+                    
+                    for metric in selected_metrics:
+                        if metric == "profit_margin" or metric == "cltv_cac_ratio":
+                            # Format as percentage
+                            row[metric_options[metric]] = sim["data"][metric]
+                        else:
+                            row[metric_options[metric]] = sim["data"][metric]
+                    
+                    comparison_data.append(row)
+                
+                df_comparison = pd.DataFrame(comparison_data)
+                
+                # Display comparison table
+                st.dataframe(df_comparison)
+                
+                # Visualize comparisons
+                st.subheader("Comparison Charts")
+                
+                for metric in selected_metrics:
+                    # Create a bar chart for each selected metric
+                    metric_name = metric_options[metric]
+                    
+                    chart_data = {
+                        'Simulation': [st.session_state.simulations[sim_id]['name'] for sim_id in selected_sims],
+                        'Value': [st.session_state.simulations[sim_id]['data'][metric] for sim_id in selected_sims]
+                    }
+                    
+                    df_chart = pd.DataFrame(chart_data)
+                    
+                    if PLOTLY_AVAILABLE:
+                        if metric in ["profit_margin", "cltv_cac_ratio"]:
+                            # Format as percentage
+                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}",
+                                        labels={"Value": f"{metric_name} (%)"})
+                            # Convert to percentage for display
+                            fig.update_layout(yaxis_tickformat='.2%')
+                        else:
+                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}")
+                            if metric in ["revenue_generated", "gross_profit", "operating_profit", "net_profit", 
+                                        "break_even_point", "total_cost_leads", "total_cost_meetings", 
+                                        "total_sales_team_commission", "total_marketing_spend", 
+                                        "seasonality_adjusted_revenue"]:
+                                # Add pound symbol
+                                fig.update_layout(yaxis_title=f"{metric_name} (£)")
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                    else:
+                        # Fallback
+                        st.write(f"Comparison of {metric_name}:")
+                        st.dataframe(df_chart)
+                
+                # Input parameter comparison
+                st.subheader("Input Parameter Comparison")
+                
+                # Select parameters to compare
+                input_params = list(st.session_state.simulations[selected_sims[0]]['data']['inputs'].keys())
+                param_options = {
+                    "leads_generated": "Leads Generated",
+                    "lead_conversion_rate": "Lead Conversion Rate",
+                    "opportunity_conversion_rate": "Opportunity Conversion Rate",
+                    "average_deal_size": "Average Deal Size",
+                    "cost_per_lead": "Cost Per Lead",
+                    "cost_per_meeting": "Cost Per Meeting",
+                    "meetings_held": "Meetings Held",
+                    "cogs": "COGS",
+                    "customer_acquisition_cost": "CAC",
+                    "avg_customer_lifetime_value": "CLTV",
+                    "churn_rate": "Churn Rate",
+                    "operating_expenses": "Operating Expenses",
+                    "sales_commission_rate": "Sales Commission Rate",
+                    "marketing_spend": "Marketing Spend",
+                    "product_dev_cost": "Product Development Cost",
+                    "discount_rate": "Discount Rate",
+                    "refund_rate": "Refund Rate",
+                    "seasonality_adjustment": "Seasonality Adjustment",
+                    "price_of_offer": "Price of Offer",
+                    "price_of_renewal": "Price of Renewal",
+                    "rate_of_renewals": "Rate of Renewals",
+                    "media_spend": "Media Spend",
+                    "funnel_conversion_rate": "Funnel Conversion Rate",
+                    "lead_to_customer_conversion_rate_inbound": "Lead to Customer Conversion Rate Inbound",
+                    "fixed_costs_per_month": "Fixed Costs Per Month",
+                    "cost_per_thousand_impressions": "Cost Per Thousand Impressions (CPM)",
+                    "conversion_rate_outbound": "Conversion Rate Outbound",
+                    "click_through_rate": "Click Through Rate",
+                    "time_to_market_inbound": "Time to Market Inbound",
+                    "organic_views_per_month": "Organic Views Per Month",
+                    "organic_view_to_lead_conversion_rate": "Organic View to Lead Conversion Rate",
+                    "lead_to_customer_conversion_rate_organic": "Lead to Customer Conversion Rate Organic",
+                    "time_to_market_organic": "Time to Market Organic",
+                    "time_to_market_outbound": "Time to Market Outbound",
+                    "outbound_salary": "Outbound Salary",
+                    "number_of_sdrs": "Number of SDRs",
+                    "contact_per_month_per_sdr": "Contact Per Month Per SDR",
+                    "average_deals_per_sales_rep_per_month": "Average Deals Per Sales Rep Per Month",
+                    "cost_to_sell_percentage": "Cost to Sell %",
+                    "time_to_sell_days": "Time to Sell Days",
+                    "cost_to_fulfil": "Cost to Fulfil",
+                    "time_to_collect": "Time to Collect",
+                    "refund_period": "Refund Period",
+                    "total_addressable_market": "Total Addressable Market",
+                    "initial_number_of_customers": "Initial Number of Customers",
+                    "cash_in_the_bank": "Cash in the Bank",
+                    "assets": "Assets",
+                    "liabilities": "Liabilities",
+                    "debt": "Debt",
+                    "debt_interest_rate": "Debt Interest Rate",
+                    "transaction_fees": "Transaction Fees"
+                }
+                
+                selected_params = st.multiselect(
+                    "Select input parameters to compare",
+                    options=input_params,
+                    default=[],
+                    format_func=lambda x: param_options.get(x, x)
+                )
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -632,173 +798,3 @@ with tab_input:
             
             st.write("Profit Waterfall:")
             st.dataframe(df_profit)
-
-# Tab 2: Compare Simulations
-with tab_compare:
-    if len(st.session_state.simulations) == 0:
-        st.warning("No simulations have been run. Please run at least one simulation in the 'Run Simulation' tab.")
-    else:
-        st.subheader("Compare Simulations")
-        
-        # Select simulations to compare
-        sim_options = list(st.session_state.simulations.keys())
-        sim_names = [st.session_state.simulations[sim]['name'] for sim in sim_options]
-        
-        selected_sims = st.multiselect(
-            "Select simulations to compare",
-            options=sim_options,
-            default=sim_options,
-            format_func=lambda x: f"{x}: {st.session_state.simulations[x]['name']}"
-        )
-        
-        if selected_sims:
-            # Choose metrics to compare
-            metric_options = {
-                "revenue_generated": "Revenue Generated",
-                "gross_profit": "Gross Profit",
-                "operating_profit": "Operating Profit",
-                "net_profit": "Net Profit",
-                "profit_margin": "Profit Margin",
-                "roi": "ROI",
-                "opportunities": "Opportunities",
-                "customers": "Customers",
-                "cltv_cac_ratio": "CLTV/CAC Ratio",
-                "break_even_point": "Break-even Point",
-                "total_cost_leads": "Total Cost of Leads",
-                "total_cost_meetings": "Total Cost of Meetings",
-                "total_sales_team_commission": "Total Sales Commission",
-                "total_marketing_spend": "Total Marketing Spend",
-                "seasonality_adjusted_revenue": "Seasonality Adjusted Revenue"
-            }
-            
-            selected_metrics = st.multiselect(
-                "Select metrics to compare",
-                options=list(metric_options.keys()),
-                default=["revenue_generated", "net_profit", "roi", "customers"],
-                format_func=lambda x: metric_options[x]
-            )
-            
-            if selected_metrics:
-                # Create comparison dataframe
-                comparison_data = []
-                
-                for sim_id in selected_sims:
-                    sim = st.session_state.simulations[sim_id]
-                    row = {"Simulation": sim["name"]}
-                    
-                    for metric in selected_metrics:
-                        if metric == "profit_margin" or metric == "cltv_cac_ratio":
-                            # Format as percentage
-                            row[metric_options[metric]] = sim["data"][metric]
-                        else:
-                            row[metric_options[metric]] = sim["data"][metric]
-                    
-                    comparison_data.append(row)
-                
-                df_comparison = pd.DataFrame(comparison_data)
-                
-                # Display comparison table
-                st.dataframe(df_comparison)
-                
-                # Visualize comparisons
-                st.subheader("Comparison Charts")
-                
-                for metric in selected_metrics:
-                    # Create a bar chart for each selected metric
-                    metric_name = metric_options[metric]
-                    
-                    chart_data = {
-                        'Simulation': [st.session_state.simulations[sim_id]['name'] for sim_id in selected_sims],
-                        'Value': [st.session_state.simulations[sim_id]['data'][metric] for sim_id in selected_sims]
-                    }
-                    
-                    df_chart = pd.DataFrame(chart_data)
-                    
-                    if PLOTLY_AVAILABLE:
-                        if metric in ["profit_margin", "cltv_cac_ratio"]:
-                            # Format as percentage
-                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}",
-                                        labels={"Value": f"{metric_name} (%)"})
-                            # Convert to percentage for display
-                            fig.update_layout(yaxis_tickformat='.2%')
-                        else:
-                            fig = px.bar(df_chart, x='Simulation', y='Value', title=f"Comparison of {metric_name}")
-                            if metric in ["revenue_generated", "gross_profit", "operating_profit", "net_profit", 
-                                        "break_even_point", "total_cost_leads", "total_cost_meetings", 
-                                        "total_sales_team_commission", "total_marketing_spend", 
-                                        "seasonality_adjusted_revenue"]:
-                                # Add pound symbol
-                                fig.update_layout(yaxis_title=f"{metric_name} (£)")
-                        
-                        st.plotly_chart(fig, use_container_width=True)
-                    else:
-                        # Fallback
-                        st.write(f"Comparison of {metric_name}:")
-                        st.dataframe(df_chart)
-                
-                # Input parameter comparison
-                st.subheader("Input Parameter Comparison")
-                
-                # Select parameters to compare
-                input_params = list(st.session_state.simulations[selected_sims[0]]['data']['inputs'].keys())
-                param_options = {
-                    "leads_generated": "Leads Generated",
-                    "lead_conversion_rate": "Lead Conversion Rate",
-                    "opportunity_conversion_rate": "Opportunity Conversion Rate",
-                    "average_deal_size": "Average Deal Size",
-                    "cost_per_lead": "Cost Per Lead",
-                    "cost_per_meeting": "Cost Per Meeting",
-                    "meetings_held": "Meetings Held",
-                    "cogs": "COGS",
-                    "customer_acquisition_cost": "CAC",
-                    "avg_customer_lifetime_value": "CLTV",
-                    "churn_rate": "Churn Rate",
-                    "operating_expenses": "Operating Expenses",
-                    "sales_commission_rate": "Sales Commission Rate",
-                    "marketing_spend": "Marketing Spend",
-                    "product_dev_cost": "Product Development Cost",
-                    "discount_rate": "Discount Rate",
-                    "refund_rate": "Refund Rate",
-                    "seasonality_adjustment": "Seasonality Adjustment",
-                    "price_of_offer": "Price of Offer",
-                    "price_of_renewal": "Price of Renewal",
-                    "rate_of_renewals": "Rate of Renewals",
-                    "media_spend": "Media Spend",
-                    "funnel_conversion_rate": "Funnel Conversion Rate",
-                    "lead_to_customer_conversion_rate_inbound": "Lead to Customer Conversion Rate Inbound",
-                    "fixed_costs_per_month": "Fixed Costs Per Month",
-                    "cost_per_thousand_impressions": "Cost Per Thousand Impressions (CPM)",
-                    "conversion_rate_outbound": "Conversion Rate Outbound",
-                    "click_through_rate": "Click Through Rate",
-                    "time_to_market_inbound": "Time to Market Inbound",
-                    "organic_views_per_month": "Organic Views Per Month",
-                    "organic_view_to_lead_conversion_rate": "Organic View to Lead Conversion Rate",
-                    "lead_to_customer_conversion_rate_organic": "Lead to Customer Conversion Rate Organic",
-                    "time_to_market_organic": "Time to Market Organic",
-                    "time_to_market_outbound": "Time to Market Outbound",
-                    "outbound_salary": "Outbound Salary",
-                    "number_of_sdrs": "Number of SDRs",
-                    "contact_per_month_per_sdr": "Contact Per Month Per SDR",
-                    "average_deals_per_sales_rep_per_month": "Average Deals Per Sales Rep Per Month",
-                    "cost_to_sell_percentage": "Cost to Sell %",
-                    "time_to_sell_days": "Time to Sell Days",
-                    "cost_to_fulfil": "Cost to Fulfil",
-                    "time_to_collect": "Time to Collect",
-                    "refund_period": "Refund Period",
-                    "total_addressable_market": "Total Addressable Market",
-                    "initial_number_of_customers": "Initial Number of Customers",
-                    "cash_in_the_bank": "Cash in the Bank",
-                    "assets": "Assets",
-                    "liabilities": "Liabilities",
-                    "debt": "Debt",
-                    "debt_interest_rate": "Debt Interest Rate",
-                    "transaction_fees": "Transaction Fees"
-                }
-                
-                selected_params = st.multiselect(
-                    "Select input parameters to compare",
-                    options=input_params,
-                    default=[],
-                    format_func=lambda x: param_options.get(x, x)
-                )
-                
